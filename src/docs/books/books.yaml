@@ -1,0 +1,82 @@
+paths:
+  /api/books/:
+    get:
+      tags: [Books]
+      summary: Listar libros del catálogo digital
+      responses:
+        '200':
+          description: Catálogo obtenido correctamente.
+    post:
+      tags: [Books]
+      summary: Crear un libro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Libro creado correctamente.
+        '400':
+          description: Faltan datos obligatorios.
+  /api/books/withcover:
+    post:
+      tags: [Books]
+      summary: Crear un libro con portada
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, author, publishedYear, cover]
+              properties:
+                title: { type: string }
+                author: { type: string }
+                publishedYear: { type: integer }
+                cover: { type: string, format: binary }
+      responses:
+        '200':
+          description: Libro creado correctamente.
+  /api/books/{bid}:
+    put:
+      tags: [Books]
+      summary: Actualizar un libro
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200': { description: Libro actualizado correctamente. }
+        '404': { description: Libro no encontrado. }
+    delete:
+      tags: [Books]
+      summary: Eliminar un libro
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Libro eliminado correctamente. }
+        '404': { description: Libro no encontrado. }
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        _id: { type: string }
+        title: { type: string }
+        author: { type: string }
+        publishedYear: { type: integer }
+        available: { type: boolean }
+        borrower: { type: string }
+        cover: { type: string }
+    BookInput:
+      type: object
+      required: [title, author, publishedYear]
+      properties:
+        title: { type: string }
+        author: { type: string }
+        publishedYear: { type: integer }
