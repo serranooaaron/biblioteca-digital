@@ -239,6 +239,32 @@ main { flex: 1; padding-bottom: 72px; }
 .book-card__author { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
 .book-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
+/* ===================== Préstamos ===================== */
+.loan-list { display: grid; gap: 14px; }
+.loan {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.loan__cover .cover { border-radius: 4px 8px 8px 4px; }
+.loan__cover .cover__title { font-size: 0.6rem; }
+.loan__cover .cover__author { display: none; }
+.loan__info h3 { font-size: 1.2rem; }
+.loan__author { color: var(--muted); }
+.loan__meta { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
+.table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.table th, .table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; background: var(--paper); }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table td small { display: block; color: var(--muted); }
+
 /* ===================== Login y registro ===================== */
 .auth { display: grid; place-items: center; padding-top: clamp(32px, 6vw, 72px); }
 .auth__card { width: 100%; max-width: 460px; padding: clamp(24px, 4vw, 36px); border-radius: 20px; background: var(--paper); border: 1px solid var(--border); box-shadow: var(--shadow); }
@@ -272,6 +298,8 @@ main { flex: 1; padding-bottom: 72px; }
   .main-nav.is-open { display: flex; }
   .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; }
   .auth__row { grid-template-columns: 1fr; }
+  .loan { grid-template-columns: 60px minmax(0, 1fr); }
+  .loan .btn { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { booksService, usersService } from '../services/index.js';
+import { booksService, loansService, usersService } from '../services/index.js';
+import { requireAuth } from '../middlewares/auth.js';
 import BookDTO from '../dto/Book.dto.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
@@ -57,6 +58,24 @@ router.get('/catalogo', asyncHandler(async (req, res) => {
     sort,
     hasFilters: Boolean(q || status || sort !== 'title'),
     loansLeft: req.user ? Math.max(0, 3 - myBookIds.size) : null,
+  });
+}));
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+router.get('/mis-prestamos', requireAuth, asyncHandler(async (req, res) => {
+  const loans = await loansService.getAll({ user: req.user.id }).sort({ createdAt: -1 }).populate('book').lean();
+  const withBook = loans
+    .filter((loan) => loan.book)
+    .map((loan) => ({
+      ...loan,
+      book: BookDTO.getPublicFrom(loan.book),
+      days: Math.max(0, Math.floor((Date.now() - new Date(loan.createdAt)) / DAY_MS)),
+    }));
+  res.render('loans', {
+    title: 'Mis préstamos',
+    active: withBook.filter((loan) => !loan.returned),
+    history: withBook.filter((loan) => loan.returned),
   });
 }));
 
