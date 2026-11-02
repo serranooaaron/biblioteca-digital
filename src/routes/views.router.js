@@ -60,4 +60,17 @@ router.get('/catalogo', asyncHandler(async (req, res) => {
   });
 }));
 
+// Solo se aceptan rutas internas como destino tras el login (evita redirecciones abiertas a otros sitios).
+const safeNext = (value) =>
+  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : '/catalogo';
+
+const authPage = (view, title) => (req, res) => {
+  const next = safeNext(req.query.next);
+  if (req.user) return res.redirect(next);
+  return res.render(view, { title, next });
+};
+
+router.get('/login', authPage('login', 'Ingresar'));
+router.get('/register', authPage('register', 'Crear cuenta'));
+
 export default router;

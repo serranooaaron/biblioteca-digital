@@ -239,6 +239,16 @@ main { flex: 1; padding-bottom: 72px; }
 .book-card__author { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
 .book-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
+/* ===================== Login y registro ===================== */
+.auth { display: grid; place-items: center; padding-top: clamp(32px, 6vw, 72px); }
+.auth__card { width: 100%; max-width: 460px; padding: clamp(24px, 4vw, 36px); border-radius: 20px; background: var(--paper); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.auth__card h1 { font-size: 2.1rem; margin: 6px 0; }
+.auth__lead { color: var(--muted); margin-bottom: 22px; }
+.auth__form { display: flex; flex-direction: column; gap: 16px; }
+.auth__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.auth__switch { margin-top: 20px; text-align: center; color: var(--muted); }
+.auth__switch a { color: var(--accent); font-weight: 600; }
+
 /* ===================== Responsive ===================== */
 @media (max-width: 860px) {
   .hero__inner { grid-template-columns: 1fr; }
@@ -261,6 +271,7 @@ main { flex: 1; padding-bottom: 72px; }
   }
   .main-nav.is-open { display: flex; }
   .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; }
+  .auth__row { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
