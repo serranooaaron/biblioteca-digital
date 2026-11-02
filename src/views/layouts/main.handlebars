@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{#if title}}{{title}} · {{/if}}Biblioteca Digital</title>
+    <meta name="description" content="Catálogo y préstamos de la Biblioteca Digital." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/" aria-label="Biblioteca Digital, inicio">
+          <span class="brand__mark" aria-hidden="true">📚</span>
+          <span class="brand__name">Biblioteca <em>Digital</em></span>
+        </a>
+
+        <nav class="main-nav" id="main-nav" aria-label="Principal">
+          <a href="/" {{#if (eq currentPath "/")}}aria-current="page"{{/if}}>Inicio</a>
+          <a href="/catalogo" {{#if (eq currentPath "/catalogo")}}aria-current="page"{{/if}}>Catálogo</a>
+          {{#if user}}<a href="/mis-prestamos" {{#if (eq currentPath "/mis-prestamos")}}aria-current="page"{{/if}}>Mis préstamos</a>{{/if}}
+          {{#if isAdmin}}<a href="/admin" {{#if (eq currentPath "/admin")}}aria-current="page"{{/if}}>Administrar</a>{{/if}}
+        </nav>
+
+        <div class="header-actions">
+          {{#if user}}
+            <details class="user-menu">
+              <summary class="avatar-chip" aria-label="Menú de la cuenta">{{initials user.name}}</summary>
+              <div class="user-menu__panel">
+                <p><strong>{{user.name}}</strong>{{user.email}}</p>
+                <a href="/mis-prestamos">Mis préstamos</a>
+                {{#if isAdmin}}<a href="/admin">Panel de administración</a>{{/if}}
+                <button type="button" data-logout>Cerrar sesión</button>
+              </div>
+            </details>
+          {{else}}
+            <a class="btn btn--ghost btn--sm" href="/login">Ingresar</a>
+            <a class="btn btn--primary btn--sm hide-mobile" href="/register">Crear cuenta</a>
+          {{/if}}
+          <button class="btn btn--icon nav-toggle" type="button" aria-controls="main-nav" aria-expanded="false" data-nav-toggle>☰</button>
+        </div>
+      </div>
+    </header>
+
+    {{{body}}}
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <span>© Biblioteca Digital · Proyecto de Aaron Serrano</span>
+        <span><a href="/docs">Documentación de la API</a></span>
+      </div>
+    </footer>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+    <script src="/js/app.js" type="module"></script>
+  </body>
+</html>

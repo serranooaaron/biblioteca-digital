@@ -1,0 +1,8 @@
+{{#if cover}}
+  <img class="cover" src="{{cover}}" alt="Tapa de {{title}}" loading="lazy" />
+{{else}}
+  <div class="cover cover--generated" style="--hue: {{coverHue title}}" role="img" aria-label="Tapa de {{title}}">
+    <span class="cover__title">{{title}}</span>
+    <span class="cover__author">{{author}}</span>
+  </div>
+{{/if}}

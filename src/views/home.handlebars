@@ -1,0 +1,32 @@
+<main>
+  <section class="hero">
+    <div class="container hero__inner">
+      <div>
+        <p class="eyebrow">Biblioteca Digital</p>
+        <h1 class="hero__title">Tu próxima lectura, a un clic de distancia</h1>
+        <p class="hero__text">Explora el catálogo, pide libros prestados y devuélvelos cuando termines. Todo desde tu cuenta.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="/catalogo">Explorar catálogo</a>
+          {{#unless user}}<a class="btn" href="/register">Crear cuenta gratis</a>{{/unless}}
+        </div>
+        <dl class="hero__stats">
+          <div><dt>Libros</dt><dd>{{total}}</dd></div>
+          <div><dt>Disponibles</dt><dd>{{available}}</dd></div>
+          <div><dt>Préstamos a la vez</dt><dd>3</dd></div>
+        </dl>
+      </div>
+      <div class="hero__shelf" aria-hidden="true">
+        {{#each latest}}<div class="hero__book">{{> cover}}</div>{{/each}}
+      </div>
+    </div>
+  </section>
+
+  <section class="container section">
+    <h2 class="section__title">¿Cómo funciona?</h2>
+    <ol class="steps">
+      <li><strong>Crea tu cuenta</strong><span>Solo necesitas nombre, email y una contraseña.</span></li>
+      <li><strong>Pide un libro</strong><span>Elige cualquier libro disponible del catálogo.</span></li>
+      <li><strong>Devuélvelo</strong><span>Desde “Mis préstamos”, cuando termines de leerlo.</span></li>
+    </ol>
+  </section>
+</main>
