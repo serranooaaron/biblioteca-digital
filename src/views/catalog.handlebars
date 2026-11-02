@@ -1,0 +1,72 @@
+<main class="container">
+  <header class="page-head">
+    <p class="eyebrow">Catálogo</p>
+    <h1>Todos los libros</h1>
+    <p>
+      {{books.length}} {{plural books.length "libro" "libros"}}{{#if q}} para “{{q}}”{{/if}}.
+      {{#if user}}
+        {{#if (eq loansLeft 0)}}Ya tienes 3 libros prestados: devuelve uno para pedir otro.{{else}}Puedes pedir {{loansLeft}} {{plural loansLeft "libro más" "libros más"}}.{{/if}}
+      {{else}}
+        <a class="link" href="/login?next=%2Fcatalogo">Ingresa</a> para pedir libros prestados.
+      {{/if}}
+    </p>
+  </header>
+
+  <form class="toolbar" method="GET" action="/catalogo" role="search">
+    <div class="toolbar__search">
+      <label class="sr-only" for="q">Buscar</label>
+      <input class="input" id="q" name="q" type="search" value="{{q}}" placeholder="Buscar por título o autor…" maxlength="80" />
+    </div>
+    <div class="segmented" role="radiogroup" aria-label="Disponibilidad">
+      <label><input type="radio" name="status" value="" {{#unless status}}checked{{/unless}} data-autosubmit /><span>Todos</span></label>
+      <label><input type="radio" name="status" value="available" {{#if (eq status "available")}}checked{{/if}} data-autosubmit /><span>Disponibles</span></label>
+      <label><input type="radio" name="status" value="loaned" {{#if (eq status "loaned")}}checked{{/if}} data-autosubmit /><span>Prestados</span></label>
+    </div>
+    <div class="field field--inline">
+      <label for="sort">Ordenar</label>
+      <select id="sort" name="sort" data-autosubmit>
+        <option value="title" {{#if (eq sort "title")}}selected{{/if}}>Título</option>
+        <option value="author" {{#if (eq sort "author")}}selected{{/if}}>Autor</option>
+        <option value="newest" {{#if (eq sort "newest")}}selected{{/if}}>Más recientes</option>
+        <option value="oldest" {{#if (eq sort "oldest")}}selected{{/if}}>Más antiguos</option>
+      </select>
+    </div>
+    <button class="btn btn--primary" type="submit">Buscar</button>
+    {{#if hasFilters}}<a class="btn btn--ghost" href="/catalogo">Limpiar</a>{{/if}}
+  </form>
+
+  <section class="book-grid">
+    {{#each books}}
+      <article class="book-card" data-book="{{_id}}">
+        <div class="book-card__cover">{{> cover}}</div>
+        <div class="book-card__body">
+          <h2 class="book-card__title">{{title}}</h2>
+          <p class="book-card__author">{{author}} · {{publishedYear}}</p>
+        </div>
+        <div class="book-card__foot" data-book-actions>
+          {{#if mine}}
+            <span class="badge badge--ok">Lo tienes tú</span>
+            <a class="btn btn--sm btn--ghost" href="/mis-prestamos">Ver</a>
+          {{else if available}}
+            <span class="badge badge--ok">Disponible</span>
+            {{#if @root.user}}
+              <button class="btn btn--sm btn--primary" type="button" data-borrow {{#if (eq @root.loansLeft 0)}}disabled title="Ya tienes 3 libros prestados"{{/if}}>Pedir</button>
+            {{else}}
+              <a class="btn btn--sm" href="/login?next=%2Fcatalogo">Pedir</a>
+            {{/if}}
+          {{else}}
+            <span class="badge badge--off">Prestado</span>
+          {{/if}}
+        </div>
+      </article>
+    {{else}}
+      <div class="empty-state">
+        <h3>No encontramos libros</h3>
+        <p>Prueba con otra búsqueda o quita los filtros.</p>
+        <a class="btn" href="/catalogo">Ver todo el catálogo</a>
+      </div>
+    {{/each}}
+  </section>
+</main>
+
+<script src="/js/catalog.js" type="module"></script>

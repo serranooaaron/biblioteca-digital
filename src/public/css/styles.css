@@ -206,6 +206,39 @@ main { flex: 1; padding-bottom: 72px; }
 .error-page__code { font-family: var(--serif); font-size: 4.5rem; font-weight: 700; color: var(--accent); }
 .error-page__message { color: var(--muted); margin: 8px 0 24px; }
 
+/* ===================== Catálogo ===================== */
+.link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.toolbar__search { flex: 1 1 240px; }
+.field--inline { flex-direction: row; align-items: center; gap: 8px; }
+.field--inline select { width: auto; padding: 9px 12px; }
+
+.segmented { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface-2); }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented span { display: block; padding: 7px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 500; color: var(--muted); cursor: pointer; }
+.segmented input:checked + span { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgb(31 36 48 / 0.12); }
+.segmented input:focus-visible + span { outline: 2px solid var(--accent); }
+
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 28px 20px; }
+.book-card { display: flex; flex-direction: column; gap: 12px; }
+.book-card__cover { transition: transform 0.2s ease; }
+.book-card:hover .book-card__cover { transform: translateY(-4px) rotate(-0.6deg); }
+.book-card__body { flex: 1; }
+.book-card__title { font-size: 1.05rem; }
+.book-card__author { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+.book-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
 /* ===================== Responsive ===================== */
 @media (max-width: 860px) {
   .hero__inner { grid-template-columns: 1fr; }
@@ -227,6 +260,7 @@ main { flex: 1; padding-bottom: 72px; }
     border-bottom: 1px solid var(--border);
   }
   .main-nav.is-open { display: flex; }
+  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
