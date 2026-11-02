@@ -9,6 +9,9 @@ export const createHash = async(password) =>{
 
 export const passwordValidation = async(user,password) => bcrypt.compare(password,user.password);
 
+// Escapa texto del usuario para usarlo en un $regex de MongoDB sin que se interprete como patrón (evita ReDoS).
+export const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 

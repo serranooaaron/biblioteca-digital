@@ -1,78 +1,53 @@
 import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
-import jwt from 'jsonwebtoken';
-import UserDTO from '../dto/User.dto.js';
+import { COOKIE_NAME, cookieOptions, signToken } from "../utils/auth.js";
 
-const getJwtSecret = () => {
-    const secret = process.env.JWT_SECRET;
-    if (!secret && (process.env.NODE_ENV === 'test' || process.env.npm_lifecycle_event === 'test')) {
-        return 'test-only-jwt-secret';
-    }
-    if (!secret) throw new Error('JWT_SECRET is not configured');
-    return secret;
-};
+const MIN_PASSWORD_LENGTH = 8;
 
 const register = async (req, res) => {
-    try {
-        const { first_name, last_name, email, password } = req.body;
-        if (!first_name || !last_name || !email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
-        const exists = await usersService.getUserByEmail(email);
-        if (exists) return res.status(400).send({ status: "error", error: "User already exists" });
-        const hashedPassword = await createHash(password);
-        const user = {
-            first_name,
-            last_name,
-            email,
-            password: hashedPassword
-        }
-        let result = await usersService.create(user);
-        console.log(result);
-        res.send({ status: "success", payload: result._id });
-    } catch (error) {
-
+    const { first_name, last_name, email, password } = req.body;
+    if (!first_name || !last_name || !email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+        return res.status(400).send({ status: "error", error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres` });
     }
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const exists = await usersService.getUserByEmail(normalizedEmail);
+    if (exists) return res.status(409).send({ status: "error", error: "User already exists" });
+
+    const user = await usersService.create({
+        first_name,
+        last_name,
+        email: normalizedEmail,
+        password: await createHash(String(password)),
+    });
+
+    // Al registrarse, el usuario queda con la sesión iniciada.
+    res.cookie(COOKIE_NAME, signToken(user), cookieOptions());
+    res.status(201).send({ status: "success", payload: user._id });
 }
 
 const login = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
-    const user = await usersService.getUserByEmail(email);
-    if (!user) return res.status(404).send({ status: "error", error: "User doesn't exist" });
-    const isValidPassword = await passwordValidation(user, password);
-    if (!isValidPassword) return res.status(400).send({ status: "error", error: "Incorrect password" });
-    const userDto = UserDTO.getUserTokenFrom(user);
-    const token = jwt.sign(userDto, getJwtSecret(), { expiresIn: "1h" });
-    res.cookie('coderCookie', token, { maxAge: 3600000 }).send({ status: "success", message: "Logged in" })
+    const user = await usersService.getUserByEmail(String(email).toLowerCase().trim());
+    // Mismo mensaje si el email no existe o la contraseña es incorrecta: no revela qué cuentas existen.
+    if (!user || !(await passwordValidation(user, String(password)))) {
+        return res.status(401).send({ status: "error", error: "Email o contraseña incorrectos" });
+    }
+    res.cookie(COOKIE_NAME, signToken(user), cookieOptions()).send({ status: "success", message: "Logged in", payload: { role: user.role } });
 }
 
-const current = async (req, res) => {
-    const cookie = req.cookies['coderCookie']
-    const user = jwt.verify(cookie, getJwtSecret());
-    if (user)
-        return res.send({ status: "success", payload: user })
+const logout = (req, res) => {
+    res.clearCookie(COOKIE_NAME, { ...cookieOptions(), maxAge: undefined });
+    res.send({ status: "success", message: "Logged out" });
 }
 
-const unprotectedLogin = async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
-    const user = await usersService.getUserByEmail(email);
-    if (!user) return res.status(404).send({ status: "error", error: "User doesn't exist" });
-    const isValidPassword = await passwordValidation(user, password);
-    if (!isValidPassword) return res.status(400).send({ status: "error", error: "Incorrect password" });
-    const token = jwt.sign(user, getJwtSecret(), { expiresIn: "1h" });
-    res.cookie('unprotectedCookie', token, { maxAge: 3600000 }).send({ status: "success", message: "Unprotected Logged in" })
-}
-const unprotectedCurrent = async (req, res) => {
-    const cookie = req.cookies['unprotectedCookie']
-    const user = jwt.verify(cookie, getJwtSecret());
-    if (user)
-        return res.send({ status: "success", payload: user })
-}
+// requireAuth ya verificó el token: aquí solo se devuelve el usuario de la sesión.
+const current = (req, res) => res.send({ status: "success", payload: req.user });
+
 export default {
     current,
     login,
+    logout,
     register,
-    current,
-    unprotectedLogin,
-    unprotectedCurrent
 }
