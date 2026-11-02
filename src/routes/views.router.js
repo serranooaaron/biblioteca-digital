@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { booksService, loansService, usersService } from '../services/index.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { requireAdmin, requireAuth } from '../middlewares/auth.js';
+import UserDTO from '../dto/User.dto.js';
 import BookDTO from '../dto/Book.dto.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
@@ -76,6 +77,34 @@ router.get('/mis-prestamos', requireAuth, asyncHandler(async (req, res) => {
     title: 'Mis préstamos',
     active: withBook.filter((loan) => !loan.returned),
     history: withBook.filter((loan) => loan.returned),
+  });
+}));
+
+const ADMIN_TABS = ['libros', 'prestamos', 'usuarios'];
+
+router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {
+  const tab = ADMIN_TABS.includes(req.query.tab) ? req.query.tab : 'libros';
+  const [books, activeLoans, users] = await Promise.all([
+    booksService.getAll({}).sort({ title: 1 }).lean(),
+    loansService.getAll({ returned: false }).sort({ createdAt: -1 }).populate('user', 'first_name last_name email').populate('book', 'title author').lean(),
+    usersService.getAll({}).sort({ last_name: 1, first_name: 1 }).lean(),
+  ]);
+
+  res.render('admin', {
+    title: 'Administración',
+    tab,
+    isBooks: tab === 'libros',
+    isLoans: tab === 'prestamos',
+    isUsers: tab === 'usuarios',
+    books: books.map(BookDTO.getPublicFrom),
+    availableBooks: books.filter((book) => book.available),
+    activeLoans: activeLoans.filter((loan) => loan.user && loan.book),
+    users: users.map((user) => ({ ...UserDTO.getPublicFrom(user), isMe: String(user._id) === req.user.id })),
+    stats: {
+      books: books.length,
+      loaned: books.filter((book) => !book.available).length,
+      users: users.length,
+    },
   });
 }));
 

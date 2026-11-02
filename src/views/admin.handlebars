@@ -1,0 +1,163 @@
+<main class="container">
+  <header class="page-head">
+    <p class="eyebrow">Administración</p>
+    <h1>Panel de la biblioteca</h1>
+  </header>
+
+  <section class="stats" aria-label="Resumen">
+    <div class="stat"><span>Libros</span><strong>{{stats.books}}</strong></div>
+    <div class="stat"><span>Prestados ahora</span><strong>{{stats.loaned}}</strong></div>
+    <div class="stat"><span>Usuarios</span><strong>{{stats.users}}</strong></div>
+  </section>
+
+  <nav class="tabs" aria-label="Secciones del panel">
+    <a href="/admin?tab=libros" {{#if isBooks}}aria-current="page"{{/if}}>Libros</a>
+    <a href="/admin?tab=prestamos" {{#if isLoans}}aria-current="page"{{/if}}>Préstamos activos <small>{{activeLoans.length}}</small></a>
+    <a href="/admin?tab=usuarios" {{#if isUsers}}aria-current="page"{{/if}}>Usuarios</a>
+  </nav>
+
+  {{#if isBooks}}
+    <section aria-label="Libros">
+      <div class="panel-head">
+        <p>{{books.length}} {{plural books.length "libro" "libros"}} en el catálogo.</p>
+        <button class="btn btn--primary" type="button" data-new-book>+ Nuevo libro</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th scope="col">Libro</th><th scope="col">Año</th><th scope="col">Estado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
+          </thead>
+          <tbody data-books-table>
+            {{#each books}}
+              <tr data-book='{{json this}}'>
+                <td>
+                  <div class="table__book">
+                    <div class="table__cover">{{> cover}}</div>
+                    <div><strong>{{title}}</strong><small>{{author}}</small></div>
+                  </div>
+                </td>
+                <td>{{publishedYear}}</td>
+                <td>{{#if available}}<span class="badge badge--ok">Disponible</span>{{else}}<span class="badge badge--off">Prestado</span>{{/if}}</td>
+                <td>
+                  <div class="table__actions">
+                    <button class="btn btn--sm" type="button" data-edit-book>Editar</button>
+                    <button class="btn btn--sm btn--danger" type="button" data-delete-book {{#unless available}}disabled title="No se puede borrar un libro prestado"{{/unless}}>Borrar</button>
+                  </div>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {{/if}}
+
+  {{#if isLoans}}
+    <section aria-label="Préstamos activos">
+      <form class="lend-form" data-lend-form>
+        <div class="field">
+          <label for="lend-user">Usuario</label>
+          <select id="lend-user" name="uid" required>
+            <option value="">Elegir usuario…</option>
+            {{#each users}}<option value="{{_id}}">{{first_name}} {{last_name}} · {{email}}</option>{{/each}}
+          </select>
+        </div>
+        <div class="field">
+          <label for="lend-book">Libro disponible</label>
+          <select id="lend-book" name="bid" required>
+            <option value="">Elegir libro…</option>
+            {{#each availableBooks}}<option value="{{_id}}">{{title}} · {{author}}</option>{{/each}}
+          </select>
+        </div>
+        <button class="btn btn--primary" type="submit">Registrar préstamo</button>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th scope="col">Libro</th><th scope="col">Lector</th><th scope="col">Desde</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
+          </thead>
+          <tbody data-loans-table>
+            {{#each activeLoans}}
+              <tr data-loan="{{_id}}">
+                <td><strong>{{book.title}}</strong><small>{{book.author}}</small></td>
+                <td>{{user.first_name}} {{user.last_name}}<small>{{user.email}}</small></td>
+                <td>{{date createdAt}}</td>
+                <td><div class="table__actions"><button class="btn btn--sm" type="button" data-return-loan>Registrar devolución</button></div></td>
+              </tr>
+            {{else}}
+              <tr><td colspan="4"><div class="empty-state"><h3>No hay préstamos activos</h3><p>Todos los libros están en la biblioteca.</p></div></td></tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {{/if}}
+
+  {{#if isUsers}}
+    <section aria-label="Usuarios">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th scope="col">Usuario</th><th scope="col">Rol</th><th scope="col">Libros</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
+          </thead>
+          <tbody data-users-table>
+            {{#each users}}
+              <tr data-user="{{_id}}" data-user-name="{{first_name}} {{last_name}}">
+                <td><strong>{{first_name}} {{last_name}}{{#if isMe}} <span class="badge">Tú</span>{{/if}}</strong><small>{{email}}</small></td>
+                <td>
+                  <label class="sr-only" for="role-{{_id}}">Rol de {{first_name}}</label>
+                  <select class="input input--sm" id="role-{{_id}}" data-role {{#if isMe}}disabled title="No puedes cambiar tu propio rol"{{/if}}>
+                    <option value="user" {{#if (eq role "user")}}selected{{/if}}>Lector</option>
+                    <option value="admin" {{#if (eq role "admin")}}selected{{/if}}>Administrador</option>
+                  </select>
+                </td>
+                <td>{{books.length}}</td>
+                <td>
+                  <div class="table__actions">
+                    <button class="btn btn--sm btn--danger" type="button" data-delete-user {{#if isMe}}disabled{{/if}}>Borrar</button>
+                  </div>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {{/if}}
+</main>
+
+<dialog class="modal" id="book-dialog" aria-labelledby="book-dialog-title">
+  <form class="modal__form" id="book-form" novalidate>
+    <header class="modal__head">
+      <h2 id="book-dialog-title">Nuevo libro</h2>
+      <button class="btn btn--icon btn--ghost" type="button" data-close aria-label="Cerrar">✕</button>
+    </header>
+    <div class="field">
+      <label for="b-title">Título</label>
+      <input id="b-title" name="title" required maxlength="150" />
+    </div>
+    <div class="modal__row">
+      <div class="field">
+        <label for="b-author">Autor</label>
+        <input id="b-author" name="author" required maxlength="120" />
+      </div>
+      <div class="field">
+        <label for="b-year">Año</label>
+        <input id="b-year" name="publishedYear" type="number" min="1000" max="2100" required />
+      </div>
+    </div>
+    <div class="field">
+      <label for="b-cover">Portada (opcional)</label>
+      <input id="b-cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="b-cover-hint" />
+      <small id="b-cover-hint" class="field__hint">JPG, PNG o WEBP de hasta 2 MB. Si no subes una, se genera una tapa con el título.</small>
+    </div>
+    <p class="form-error" data-form-error role="alert"></p>
+    <footer class="modal__foot">
+      <button class="btn btn--ghost" type="button" data-close>Cancelar</button>
+      <button class="btn btn--primary" type="submit">Guardar</button>
+    </footer>
+  </form>
+</dialog>
+
+<script src="/js/admin.js" type="module"></script>

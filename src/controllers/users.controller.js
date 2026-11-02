@@ -45,8 +45,13 @@ const deleteUser = async (req, res) => {
     if (userId === req.user.id) {
         return res.status(400).send({ status: "error", error: "No puedes borrar tu propia cuenta desde aquí" });
     }
-    const result = await usersService.delete(userId);
-    if (!result) return res.status(404).send({ status: "error", error: "User not found" })
+    const user = await usersService.getUserById(userId);
+    if (!user) return res.status(404).send({ status: "error", error: "User not found" })
+    // Si se borrara con libros en su poder, esos libros quedarían prestados para siempre.
+    if (user.books.length > 0) {
+        return res.status(409).send({ status: "error", error: "El usuario tiene libros prestados: registra la devolución antes de borrarlo" });
+    }
+    await usersService.delete(userId);
     res.send({ status: "success", message: "User deleted" })
 }
 

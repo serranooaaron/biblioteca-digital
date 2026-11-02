@@ -95,6 +95,16 @@ describe('Loans router integration tests', function () {
     expect(response.status).to.equal(400);
   });
 
+  it('does not delete a user who still has borrowed books', async function () {
+    const { cookie: adminCookie } = await loginAs(requester, 'admin');
+    const { user, cookie } = await loginAs(requester, 'user');
+    const book = await createBook();
+    await requester.post(`/api/loans/${book._id}`).set('Cookie', cookie);
+    const response = await requester.delete(`/api/users/${user._id}`).set('Cookie', adminCookie);
+    expect(response.status).to.equal(409);
+    expect(await usersService.getUserById(user._id)).to.not.equal(null);
+  });
+
   it('PUT /api/loans/:lid/return gives the book back', async function () {
     const { user, cookie } = await loginAs(requester, 'user');
     const { cookie: otherCookie } = await loginAs(requester, 'user');
