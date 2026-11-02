@@ -1,50 +1,81 @@
-# Biblioteca Digital API
+# Biblioteca Digital
 
-API REST para gestionar usuarios, un catálogo digital, préstamos y sesiones de una biblioteca.
+Aplicación web para una biblioteca: catálogo de libros, cuentas de lectores, préstamos y devoluciones, con un panel para administrar todo.
+
+Parte de la entrega final de Programación Backend III ([backend3-comision86245](https://github.com/serranooaaron/backend3-comision86245)) y le suma interfaz web, roles y correcciones de seguridad.
 
 ## Stack
 
-- Node.js 20
-- Express
-- MongoDB + Mongoose
+- Node.js 20 + Express 4
+- Express-Handlebars (vistas) + JavaScript sin frameworks en el navegador
+- MongoDB + Mongoose 6
+- JWT + bcrypt + cookies `httpOnly`
+- Multer para portadas
 - Swagger / OpenAPI
-- Mocha + Chai + Supertest
+- Mocha + Chai + Supertest (31 tests con MongoDB en memoria)
+- Docker
 
-## Requisitos
+## Funcionalidades
 
-- Node.js 18+
-- MongoDB local o Atlas
-- npm
+**Lectores**
+- Catálogo con búsqueda por título o autor, filtro por disponibilidad y orden
+- Pedir un libro con un clic (hasta 3 préstamos activos)
+- “Mis préstamos”: libros en su poder, devolución e historial
 
-## Instalación
+**Administradores** (`/admin`)
+- Libros: alta con portada opcional, edición y borrado
+- Préstamos activos: registrar un préstamo a nombre de un lector y su devolución
+- Usuarios: cambiar rol y borrar cuentas
 
-1. Clonar el repositorio y entrar a la carpeta del proyecto.
-2. Instalar dependencias:
+Los libros sin portada se muestran con una tapa generada a partir del título.
+
+## Seguridad
+
+- Contraseñas con bcrypt, mínimo 8 caracteres; los usuarios se devuelven siempre sin contraseña
+- Sesión con JWT en cookie `httpOnly` + `SameSite=Lax` (`Secure` en producción)
+- Rutas protegidas por rol: usuarios solo para admin; libros: lectura pública, escritura admin
+- Cada lector solo ve y devuelve sus propios préstamos
+- Portadas: solo JPG/PNG/WEBP de hasta 2 MB, con nombre generado por el servidor
+- Búsquedas con texto escapado en `$regex` (evita ReDoS)
+- Mismo mensaje para email inexistente o contraseña incorrecta
+- Errores async capturados: respuestas 400/401/403/404 en lugar de caídas o 500
+- Redirección tras el login solo a rutas internas
+
+## Ejecución local
 
 ```bash
 npm install
 ```
 
-3. Crear un archivo `.env` basado en `.env.example`:
+**Sin base de datos (recomendado para probar):** levanta MongoDB en memoria con el catálogo y dos cuentas de prueba (las credenciales aparecen en la consola y en `scripts/dev-memory.js`). Los datos se borran al cerrar.
 
 ```bash
-cp .env.example .env
+npm run dev:memory
 ```
 
-4. Ajustar las variables de entorno según tu entorno local.
-
-## Ejecutar la aplicación
+**Con MongoDB Atlas:** copia `.env.example` a `.env`, completa las variables y carga el catálogo inicial.
 
 ```bash
-npm start
+npm run seed
 ```
 
-La API quedará disponible en:
+```bash
+npm run dev
+```
 
-- http://localhost:8081/api/...
-- http://localhost:8081/docs
+La app queda en http://localhost:8081 y la documentación de la API en http://localhost:8081/docs.
 
-## Ejecutar tests
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `MONGO_URL` | Cadena de conexión de MongoDB (usa una base propia, ej. `/biblioteca-digital`) |
+| `JWT_SECRET` | Clave larga y aleatoria para firmar los tokens (obligatoria) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Opcional: cuenta administradora que crea `npm run seed` |
+| `PORT` | Puerto (por defecto 8081) |
+| `NODE_ENV` | `production` activa la cookie `Secure` |
+
+## Tests
 
 ```bash
 npm test
@@ -52,63 +83,37 @@ npm test
 
 ## Docker
 
-No se crea `docker-compose.yml` porque el proyecto es un único servicio y no requiere orquestación multi-contenedor para funcionar. Para construir la imagen localmente:
+```bash
+docker build -t biblioteca-digital .
+```
 
 ```bash
-	docker build -t biblioteca-digital-api .
+docker run --rm -p 8081:8081 --env-file .env biblioteca-digital
 ```
 
-Y para correr el contenedor:
+## Vistas
 
-```bash
-	docker run --rm -p 8081:8081 --env-file .env biblioteca-digital-api
-```
-## LINK DOCKER: https://hub.docker.com/r/pochitoz/biblioteca-digital-api
-> No se inventa un usuario de DockerHub ni un repositorio remoto; la imagen se construye y ejecuta localmente en este entorno.
+| Ruta | Descripción |
+|---|---|
+| `/` | Inicio |
+| `/catalogo` | Catálogo con búsqueda y filtros |
+| `/mis-prestamos` | Préstamos del lector (requiere sesión) |
+| `/login`, `/register` | Ingreso y registro |
+| `/admin` | Panel de libros, préstamos y usuarios (solo administradores) |
 
-## Temario de la entrega
+## API
 
-La entrega presenta una biblioteca digital con estos módulos:
+| Método | Ruta | Acceso |
+|---|---|---|
+| `POST` | `/api/sessions/register` · `/login` · `/logout` | Público |
+| `GET` | `/api/sessions/current` | Con sesión |
+| `GET` | `/api/books` (`?q=`, `?available=`) | Público |
+| `POST` `PUT` `DELETE` | `/api/books`, `/api/books/withcover`, `/api/books/:bid` | Administrador |
+| `GET` | `/api/loans/mine` | Con sesión |
+| `POST` | `/api/loans/:bid` (pedir para uno mismo) | Con sesión |
+| `PUT` | `/api/loans/:lid/return` | Dueño o administrador |
+| `GET` | `/api/loans/:lid` | Dueño o administrador |
+| `GET` | `/api/loans` · `POST /api/loans/:uid/:bid` | Administrador |
+| `GET` `PUT` `DELETE` | `/api/users`, `/api/users/:uid` | Administrador |
 
-- Gestión de usuarios y perfiles.
-- Catálogo digital de libros.
-- Préstamos de libros asociados a usuarios.
-- Registro e inicio de sesión con JWT y cookies.
-- Documentación OpenAPI con Swagger.
-- Tests funcionales de integración y tests de acceso a datos.
-- Ejecución reproducible con Docker.
-
-La API usa recursos propios del dominio bibliotecario: `/api/books` para el catálogo y `/api/loans` para los préstamos.
-
-Nota: en esta versión se modificó la nomenclatura de `adoption routes` por `loan`, para mantener el dominio consistente con el módulo de préstamos.
-
-## Endpoints principales
-
-- `GET /api/users`
-- `GET /api/users/:uid`
-- `PUT /api/users/:uid`
-- `DELETE /api/users/:uid`
-- `GET /api/books` - catálogo digital
-- `POST /api/books` - alta de libro
-- `POST /api/books/withcover` - alta de libro con portada
-- `PUT /api/books/:bid` - actualización de libro
-- `DELETE /api/books/:bid` - baja de libro
-- `GET /api/loans` - listado de préstamos
-- `GET /api/loans/:lid` - consulta de préstamo
-- `POST /api/loans/:uid/:bid` - creación de préstamo
-- `POST /api/sessions/register`
-- `POST /api/sessions/login`
-- `GET /api/sessions/current`
-
-
-## Documentación Swagger
-
-La documentación OpenAPI queda disponible en:
-
-```text
-http://localhost:8081/docs
-```
-
-La especificación de usuarios se define en:
-
-- [src/docs/users/users.yaml](src/docs/users/users.yaml)
+La especificación OpenAPI está en [src/docs](src/docs).

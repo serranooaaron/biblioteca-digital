@@ -2,29 +2,64 @@ paths:
   /api/loans/:
     get:
       tags: [Loans]
-      summary: Listar préstamos
+      summary: Listar todos los préstamos (administradores)
+      parameters:
+        - { in: query, name: active, required: false, schema: { type: boolean }, description: Solo préstamos sin devolver }
       responses:
         '200': { description: Préstamos obtenidos correctamente. }
+        '401': { description: Sin sesión. }
+        '403': { description: Solo administradores. }
+  /api/loans/mine:
+    get:
+      tags: [Loans]
+      summary: Préstamos del usuario logueado
+      responses:
+        '200': { description: Préstamos del usuario. }
+        '401': { description: Sin sesión. }
   /api/loans/{lid}:
     get:
       tags: [Loans]
-      summary: Consultar un préstamo
+      summary: Consultar un préstamo (dueño o administrador)
       parameters:
         - { in: path, name: lid, required: true, schema: { type: string } }
       responses:
         '200': { description: Préstamo encontrado. }
+        '403': { description: El préstamo es de otro usuario. }
         '404': { description: Préstamo no encontrado. }
+  /api/loans/{bid}:
+    post:
+      tags: [Loans]
+      summary: Pedir un libro para el usuario logueado
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Préstamo creado correctamente. }
+        '400': { description: El libro ya está prestado o el usuario alcanzó el límite de 3 préstamos. }
+        '401': { description: Sin sesión. }
+        '404': { description: Libro no encontrado. }
   /api/loans/{uid}/{bid}:
     post:
       tags: [Loans]
-      summary: Registrar un préstamo de libro
+      summary: Registrar un préstamo a nombre de un usuario (administradores)
       parameters:
         - { in: path, name: uid, required: true, schema: { type: string } }
         - { in: path, name: bid, required: true, schema: { type: string } }
       responses:
         '200': { description: Préstamo creado correctamente. }
-        '400': { description: El libro ya está prestado. }
+        '400': { description: El libro ya está prestado o el usuario alcanzó el límite. }
+        '403': { description: Solo administradores. }
         '404': { description: Usuario o libro no encontrado. }
+  /api/loans/{lid}/return:
+    put:
+      tags: [Loans]
+      summary: Devolver un libro (dueño del préstamo o administrador)
+      parameters:
+        - { in: path, name: lid, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Libro devuelto. }
+        '400': { description: El libro ya había sido devuelto. }
+        '403': { description: El préstamo es de otro usuario. }
+        '404': { description: Préstamo no encontrado. }
 components:
   schemas:
     Loan:
@@ -34,4 +69,5 @@ components:
         user: { type: string }
         book: { type: string }
         returned: { type: boolean }
+        returnedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
