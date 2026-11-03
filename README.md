@@ -2,7 +2,7 @@
 
 Aplicación web para una biblioteca: catálogo de libros, cuentas de lectores, préstamos y devoluciones, con un panel para administrar todo.
 
-Parte de la entrega final de Programación Backend III ([backend3-comision86245](https://github.com/serranooaaron/backend3-comision86245)) y le suma interfaz web, roles y correcciones de seguridad.
+Parte de la entrega final de Programación Backend III (Coderhouse, comisión 86245; el primer commit de este repo es esa entrega) y le suma interfaz web, roles y correcciones de seguridad.
 
 ## Stack
 
