@@ -15,7 +15,6 @@ describe('Testing Users Dao', function () {
   });
 
   beforeEach(async function () {
-    this.timeout(5000);
     await mongoose.connection.collection('Users').deleteMany({});
   });
 
