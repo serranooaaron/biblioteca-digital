@@ -3,7 +3,7 @@ import supertest from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/app.js';
-import { loginAs } from './helpers/auth.js';
+import { loginAs, randomPassword } from './helpers/auth.js';
 
 const { expect } = chai;
 const requester = supertest(app);
@@ -19,7 +19,7 @@ describe('Digital Library API', function () {
   afterEach(async function () { await mongoose.connection.dropDatabase(); });
   after(async function () { await mongoose.disconnect(); await mongoServer.stop(); });
 
-  const reader = { first_name: 'Test', last_name: 'User', email: 'reader@example.com', password: 'testpassword' };
+  const reader = { first_name: 'Test', last_name: 'User', email: 'reader@example.com', password: randomPassword() };
 
   it('registers a library user and starts the session', async function () {
     const response = await requester.post('/api/sessions/register').send(reader);
@@ -29,7 +29,7 @@ describe('Digital Library API', function () {
   });
 
   it('rejects short passwords and duplicated emails', async function () {
-    const short = await requester.post('/api/sessions/register').send({ ...reader, password: 'corta' });
+    const short = await requester.post('/api/sessions/register').send({ ...reader, password: 'a'.repeat(7) });
     await requester.post('/api/sessions/register').send(reader);
     const duplicated = await requester.post('/api/sessions/register').send({ ...reader, email: 'READER@example.com' });
     expect(short.status).to.equal(400);
@@ -47,8 +47,8 @@ describe('Digital Library API', function () {
 
   it('uses the same error for unknown email and wrong password', async function () {
     await requester.post('/api/sessions/register').send(reader);
-    const wrongPassword = await requester.post('/api/sessions/login').send({ email: reader.email, password: 'otraclave1' });
-    const unknown = await requester.post('/api/sessions/login').send({ email: 'nadie@example.com', password: 'otraclave1' });
+    const wrongPassword = await requester.post('/api/sessions/login').send({ email: reader.email, password: randomPassword() });
+    const unknown = await requester.post('/api/sessions/login').send({ email: 'nadie@example.com', password: randomPassword() });
     expect(wrongPassword.status).to.equal(401);
     expect(unknown.status).to.equal(401);
     expect(wrongPassword.body.error).to.equal(unknown.body.error);
@@ -83,9 +83,9 @@ describe('Digital Library API', function () {
   });
 
   it('does not let a user change their password through PUT /api/users', async function () {
-    const { cookie: adminCookie, user: admin } = await loginAs(requester, 'admin');
-    const response = await requester.put(`/api/users/${admin._id}`).set('Cookie', adminCookie).send({ password: 'hackeada', first_name: 'Nuevo' });
-    const login = await requester.post('/api/sessions/login').send({ email: admin.email, password: 'testpassword' });
+    const { cookie: adminCookie, user: admin, password } = await loginAs(requester, 'admin');
+    const response = await requester.put(`/api/users/${admin._id}`).set('Cookie', adminCookie).send({ password: randomPassword(), first_name: 'Nuevo' });
+    const login = await requester.post('/api/sessions/login').send({ email: admin.email, password });
     expect(response.status).to.equal(200);
     expect(login.status).to.equal(200);
   });
