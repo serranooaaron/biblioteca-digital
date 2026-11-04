@@ -142,7 +142,7 @@ main { flex: 1; padding-bottom: 72px; }
     linear-gradient(160deg, hsl(var(--hue) 45% 38%), hsl(calc(var(--hue) + 30) 50% 24%));
 }
 .cover__title { font-family: var(--serif); font-weight: 700; font-size: clamp(0.95rem, 1.5vw, 1.25rem); line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
-.hero__book .cover__title { font-size: clamp(0.78rem, 1.05vw, 1rem); }
+.hero__book .cover__title { font-size: clamp(0.72rem, 0.9vw, 0.88rem); }
 .hero__book .cover__author { font-size: 0.68rem; }
 .cover__author { font-size: 0.78rem; opacity: 0.85; border-top: 1px solid rgb(255 255 255 / 0.35); padding-top: 8px; }
 
