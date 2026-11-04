@@ -14,7 +14,7 @@ router.use(asyncHandler(async (req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.overdueCount = 0;
   if (req.user) {
-    const active = await loansService.getAll({ user: req.user.id, returned: false }).lean();
+    const active = await loansService.getAll({ user: req.user.id, returned: false }).select('dueDate createdAt returned').lean();
     res.locals.overdueCount = active.filter((loan) => loanStatus(loan).overdue).length;
   }
   next();

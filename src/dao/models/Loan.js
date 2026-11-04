@@ -8,4 +8,8 @@ const schema = new mongoose.Schema({
   returnedAt: Date,
 }, { timestamps: true });
 
+// Cada página del lector cuenta sus préstamos activos, y el panel lista los activos del más nuevo al más viejo.
+schema.index({ user: 1, returned: 1 });
+schema.index({ returned: 1, createdAt: -1 });
+
 export default mongoose.model('Loans', schema);
