@@ -89,7 +89,19 @@ app.use((err, req, res, next) => {
 if (!isTest) {
   getJwtSecret(); // Falla al arrancar si falta JWT_SECRET, en lugar de fallar en el primer login.
   mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/biblioteca_digital');
-  app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+  const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+  // Apagado ordenado: en un contenedor, Node ignora estas señales si nadie las atiende
+  // y la plataforma termina matando el proceso a la fuerza.
+  const shutdown = () => {
+    server.close(async () => {
+      await mongoose.disconnect();
+      process.exit(0);
+    });
+    server.closeIdleConnections();
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 export default app;
