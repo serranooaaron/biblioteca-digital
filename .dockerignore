@@ -10,3 +10,4 @@ coverage
 **/coverage
 **/.DS_Store
 src/public/img/*
+test
