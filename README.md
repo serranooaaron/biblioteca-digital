@@ -12,7 +12,7 @@ Parte de la entrega final de Programación Backend III (Coderhouse, comisión 86
 - JWT + bcrypt + cookies `httpOnly`
 - Multer para portadas
 - Swagger / OpenAPI
-- Mocha + Chai + Supertest (31 tests con MongoDB en memoria)
+- Mocha + Chai + Supertest (38 tests con MongoDB en memoria)
 - Docker
 
 ## Funcionalidades
@@ -20,11 +20,12 @@ Parte de la entrega final de Programación Backend III (Coderhouse, comisión 86
 **Lectores**
 - Catálogo con búsqueda por título o autor, filtro por disponibilidad y orden
 - Pedir un libro con un clic (hasta 3 préstamos activos)
-- “Mis préstamos”: libros en su poder, devolución e historial
+- Cada préstamo dura 14 días, con aviso cuando está por vencer y cuando ya venció
+- “Mis préstamos”: libros en su poder ordenados por vencimiento, devolución e historial
 
 **Administradores** (`/admin`)
 - Libros: alta con portada opcional, edición y borrado
-- Préstamos activos: registrar un préstamo a nombre de un lector y su devolución
+- Préstamos activos: vencimientos, registrar un préstamo a nombre de un lector y su devolución
 - Usuarios: cambiar rol y borrar cuentas
 
 Los libros sin portada se muestran con una tapa generada a partir del título.
@@ -47,7 +48,7 @@ Los libros sin portada se muestran con una tapa generada a partir del título.
 npm install
 ```
 
-**Sin base de datos (recomendado para probar):** levanta MongoDB en memoria con el catálogo y dos cuentas de prueba (las credenciales aparecen en la consola y en `scripts/dev-memory.js`). Los datos se borran al cerrar.
+**Sin base de datos (recomendado para probar):** levanta MongoDB en memoria con el catálogo, dos cuentas de prueba y préstamos de ejemplo en cada estado (las contraseñas se generan en cada arranque y aparecen en la consola). Los datos se borran al cerrar.
 
 ```bash
 npm run dev:memory
@@ -113,7 +114,7 @@ docker run --rm -p 8081:8081 --env-file .env biblioteca-digital
 | `POST` | `/api/loans/:bid` (pedir para uno mismo) | Con sesión |
 | `PUT` | `/api/loans/:lid/return` | Dueño o administrador |
 | `GET` | `/api/loans/:lid` | Dueño o administrador |
-| `GET` | `/api/loans` · `POST /api/loans/:uid/:bid` | Administrador |
+| `GET` | `/api/loans` (`?active=`, `?overdue=`) · `POST /api/loans/:uid/:bid` | Administrador |
 | `GET` `PUT` `DELETE` | `/api/users`, `/api/users/:uid` | Administrador |
 
 La especificación OpenAPI está en [src/docs](src/docs).
