@@ -5,14 +5,20 @@ import UserDTO from '../dto/User.dto.js';
 import BookDTO from '../dto/Book.dto.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
+import { LOAN_DAYS, loanStatus } from '../utils/loans.js';
 
 const router = Router();
 
-// Ruta actual disponible en todas las vistas (para marcar el menú).
-router.use((req, res, next) => {
+// Datos comunes a todas las vistas: ruta actual (para marcar el menú) y préstamos vencidos del lector.
+router.use(asyncHandler(async (req, res, next) => {
   res.locals.currentPath = req.path;
+  res.locals.overdueCount = 0;
+  if (req.user) {
+    const active = await loansService.getAll({ user: req.user.id, returned: false }).lean();
+    res.locals.overdueCount = active.filter((loan) => loanStatus(loan).overdue).length;
+  }
   next();
-});
+}));
 
 router.get('/', asyncHandler(async (req, res) => {
   const books = await booksService.getAll({});
@@ -62,21 +68,19 @@ router.get('/catalogo', asyncHandler(async (req, res) => {
   });
 }));
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+// Los que vencen antes van primero: lo más urgente queda arriba.
+const byDueDate = (a, b) => new Date(a.dueDate) - new Date(b.dueDate);
 
 router.get('/mis-prestamos', requireAuth, asyncHandler(async (req, res) => {
   const loans = await loansService.getAll({ user: req.user.id }).sort({ createdAt: -1 }).populate('book').lean();
   const withBook = loans
     .filter((loan) => loan.book)
-    .map((loan) => ({
-      ...loan,
-      book: BookDTO.getPublicFrom(loan.book),
-      days: Math.max(0, Math.floor((Date.now() - new Date(loan.createdAt)) / DAY_MS)),
-    }));
+    .map((loan) => ({ ...loan, ...loanStatus(loan), book: BookDTO.getPublicFrom(loan.book) }));
   res.render('loans', {
     title: 'Mis préstamos',
-    active: withBook.filter((loan) => !loan.returned),
+    active: withBook.filter((loan) => !loan.returned).sort(byDueDate),
     history: withBook.filter((loan) => loan.returned),
+    loanDays: LOAN_DAYS,
   });
 }));
 
@@ -90,6 +94,11 @@ router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {
     usersService.getAll({}).sort({ last_name: 1, first_name: 1 }).lean(),
   ]);
 
+  const currentLoans = activeLoans
+    .filter((loan) => loan.user && loan.book)
+    .map((loan) => ({ ...loan, ...loanStatus(loan) }))
+    .sort(byDueDate);
+
   res.render('admin', {
     title: 'Administración',
     tab,
@@ -98,11 +107,12 @@ router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {
     isUsers: tab === 'usuarios',
     books: books.map(BookDTO.getPublicFrom),
     availableBooks: books.filter((book) => book.available),
-    activeLoans: activeLoans.filter((loan) => loan.user && loan.book),
+    activeLoans: currentLoans,
     users: users.map((user) => ({ ...UserDTO.getPublicFrom(user), isMe: String(user._id) === req.user.id })),
     stats: {
       books: books.length,
       loaned: books.filter((book) => !book.available).length,
+      overdue: currentLoans.filter((loan) => loan.overdue).length,
       users: users.length,
     },
   });

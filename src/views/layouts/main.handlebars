@@ -45,6 +45,14 @@
       </div>
     </header>
 
+    {{#if overdueCount}}
+      {{#unless (eq currentPath "/mis-prestamos")}}
+        <a class="overdue-alert" href="/mis-prestamos" data-overdue-alert>
+          <span class="container">Tienes {{overdueCount}} {{plural overdueCount "libro vencido" "libros vencidos"}}. {{plural overdueCount "Devuélvelo" "Devuélvelos"}} desde “Mis préstamos” →</span>
+        </a>
+      {{/unless}}
+    {{/if}}
+
     {{{body}}}
 
     <footer class="site-footer">

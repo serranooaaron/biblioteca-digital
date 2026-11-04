@@ -5,6 +5,7 @@ paths:
       summary: Listar todos los préstamos (administradores)
       parameters:
         - { in: query, name: active, required: false, schema: { type: boolean }, description: Solo préstamos sin devolver }
+        - { in: query, name: overdue, required: false, schema: { type: boolean }, description: Solo préstamos vencidos }
       responses:
         '200': { description: Préstamos obtenidos correctamente. }
         '401': { description: Sin sesión. }
@@ -69,5 +70,11 @@ components:
         user: { type: string }
         book: { type: string }
         returned: { type: boolean }
+        dueDate: { type: string, format: date-time, description: Vence 14 días después del préstamo }
+        daysLeft: { type: integer, description: Días que faltan; negativo si está vencido }
+        overdue: { type: boolean }
+        overdueDays: { type: integer }
+        dueToday: { type: boolean }
+        dueSoon: { type: boolean, description: Faltan 3 días o menos }
         returnedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }

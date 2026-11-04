@@ -2,22 +2,20 @@
   <header class="page-head">
     <p class="eyebrow">Tu cuenta</p>
     <h1>Mis préstamos</h1>
-    <p>Préstamos activos: {{active.length}} de 3.</p>
+    <p>Préstamos activos: {{active.length}} de 3. Cada préstamo dura {{loanDays}} días.</p>
   </header>
 
   <section aria-labelledby="active-title">
     <h2 class="section__title" id="active-title">En tus manos</h2>
     <div class="loan-list" data-active-list>
       {{#each active}}
-        <article class="loan" data-loan="{{_id}}">
+        <article class="loan {{#if overdue}}loan--overdue{{/if}}" data-loan="{{_id}}">
           <div class="loan__cover">{{#with book}}{{> cover}}{{/with}}</div>
           <div class="loan__info">
             <h3>{{book.title}}</h3>
             <p class="loan__author">{{book.author}} · {{book.publishedYear}}</p>
-            <p class="loan__meta">
-              Lo pediste el {{date createdAt}}
-              {{#if (eq days 0)}}(hoy){{else}}· hace {{days}} {{plural days "día" "días"}}{{/if}}
-            </p>
+            <p class="loan__meta">Lo pediste el {{date createdAt}}</p>
+            <p class="loan__due">{{> loanDue}}</p>
           </div>
           <button class="btn btn--primary" type="button" data-return>Devolver</button>
         </article>

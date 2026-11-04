@@ -199,7 +199,7 @@ main { flex: 1; padding-bottom: 72px; }
 
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-2); color: var(--muted); }
 .badge--ok { background: rgb(29 122 74 / 0.1); color: var(--ok); }
-.badge--off { background: rgb(183 121 31 / 0.12); color: var(--gold); }
+.badge--off { background: rgb(183 121 31 / 0.14); color: #7a4f0f; }
 .badge--danger { background: rgb(180 35 24 / 0.1); color: var(--danger); }
 
 .error-page { text-align: center; padding: 96px 0; }
@@ -257,6 +257,13 @@ main { flex: 1; padding-bottom: 72px; }
 .loan__info h3 { font-size: 1.2rem; }
 .loan__author { color: var(--muted); }
 .loan__meta { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+.loan__due { margin-top: 6px; }
+.loan--overdue { border-color: rgb(180 35 24 / 0.45); background: rgb(180 35 24 / 0.03); }
+
+.overdue-alert { display: block; padding: 10px 0; background: var(--danger); color: #fff; font-weight: 600; font-size: 0.92rem; }
+.overdue-alert:hover { background: #912018; }
+.overdue-alert:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.overdue-alert .container { display: block; }
 
 .table-wrap { position: relative; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
 .table { width: 100%; border-collapse: collapse; min-width: 560px; }
@@ -270,6 +277,8 @@ main { flex: 1; padding-bottom: 72px; }
 .stat { display: flex; flex-direction: column; padding: 16px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); }
 .stat span { color: var(--muted); font-size: 0.85rem; }
 .stat strong { font-family: var(--serif); font-size: 1.9rem; color: var(--accent); }
+.stat--alert { border-color: rgb(180 35 24 / 0.45); }
+.stat--alert strong { color: var(--danger); }
 
 .tabs { display: flex; gap: 4px; margin: 28px 0 18px; border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tabs a { padding: 10px 14px; color: var(--muted); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import BookDTO from '../dto/Book.dto.js';
 import { booksService, loansService, usersService } from '../services/index.js';
+import { dueDateFrom, loanStatus } from '../utils/loans.js';
 
 const MAX_ACTIVE_LOANS = 3;
 const USER_FIELDS = 'first_name last_name email';
@@ -8,17 +9,24 @@ const BOOK_FIELDS = 'title author publishedYear cover';
 
 const toPublicLoan = (loan) => {
   const plain = loan.toObject ? loan.toObject() : loan;
-  return { ...plain, book: plain.book && plain.book.title ? BookDTO.getPublicFrom(plain.book) : plain.book };
+  return {
+    ...plain,
+    ...loanStatus(plain),
+    book: plain.book && plain.book.title ? BookDTO.getPublicFrom(plain.book) : plain.book,
+  };
 };
 
 const isOwnerOrAdmin = (req, loan) =>
   req.user.role === 'admin' || String(loan.user?._id ?? loan.user) === req.user.id;
 
-// Todos los préstamos (solo administradores). ?active=true muestra solo los no devueltos.
+// Todos los préstamos (solo administradores). ?active=true muestra solo los no devueltos
+// y ?overdue=true solo los vencidos.
 const getAllLoans = async (req, res) => {
-  const filter = req.query.active === 'true' ? { returned: false } : {};
+  const onlyOverdue = req.query.overdue === 'true';
+  const filter = req.query.active === 'true' || onlyOverdue ? { returned: false } : {};
   const result = await loansService.getAll(filter).sort({ createdAt: -1 }).populate('user', USER_FIELDS).populate('book', BOOK_FIELDS);
-  res.send({ status: 'success', payload: result.map(toPublicLoan) });
+  const loans = result.map(toPublicLoan);
+  res.send({ status: 'success', payload: onlyOverdue ? loans.filter((loan) => loan.overdue) : loans });
 };
 
 // Préstamos del usuario logueado.
@@ -32,7 +40,7 @@ const getLoan = async (req, res) => {
   const loan = await loansService.getBy({ _id: req.params.lid });
   if (!loan) return res.status(404).send({ status: 'error', error: 'Loan not found' });
   if (!isOwnerOrAdmin(req, loan)) return res.status(403).send({ status: 'error', error: 'Este préstamo no te pertenece' });
-  res.send({ status: 'success', payload: loan });
+  res.send({ status: 'success', payload: toPublicLoan(loan) });
 };
 
 const lendBook = async (res, uid, bid) => {
@@ -50,7 +58,7 @@ const lendBook = async (res, uid, bid) => {
   user.books.push(book._id);
   await usersService.update(user._id, { books: user.books });
   await booksService.update(book._id, { available: false, borrower: user._id });
-  const loan = await loansService.create({ user: user._id, book: book._id });
+  const loan = await loansService.create({ user: user._id, book: book._id, dueDate: dueDateFrom() });
   res.send({ status: 'success', message: 'Book loaned', payload: loan._id });
 };
 

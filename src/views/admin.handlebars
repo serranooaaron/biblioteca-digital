@@ -7,6 +7,7 @@
   <section class="stats" aria-label="Resumen">
     <div class="stat"><span>Libros</span><strong>{{stats.books}}</strong></div>
     <div class="stat"><span>Prestados ahora</span><strong>{{stats.loaned}}</strong></div>
+    <div class="stat {{#if stats.overdue}}stat--alert{{/if}}"><span>Vencidos</span><strong>{{stats.overdue}}</strong></div>
     <div class="stat"><span>Usuarios</span><strong>{{stats.users}}</strong></div>
   </section>
 
@@ -75,7 +76,7 @@
       <div class="table-wrap">
         <table class="table">
           <thead>
-            <tr><th scope="col">Libro</th><th scope="col">Lector</th><th scope="col">Desde</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
+            <tr><th scope="col">Libro</th><th scope="col">Lector</th><th scope="col">Desde</th><th scope="col">Vencimiento</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
           </thead>
           <tbody data-loans-table>
             {{#each activeLoans}}
@@ -83,10 +84,11 @@
                 <td><strong>{{book.title}}</strong><small>{{book.author}}</small></td>
                 <td>{{user.first_name}} {{user.last_name}}<small>{{user.email}}</small></td>
                 <td>{{date createdAt}}</td>
+                <td>{{> loanDue}}</td>
                 <td><div class="table__actions"><button class="btn btn--sm" type="button" data-return-loan>Registrar devolución</button></div></td>
               </tr>
             {{else}}
-              <tr><td colspan="4"><div class="empty-state"><h3>No hay préstamos activos</h3><p>Todos los libros están en la biblioteca.</p></div></td></tr>
+              <tr><td colspan="5"><div class="empty-state"><h3>No hay préstamos activos</h3><p>Todos los libros están en la biblioteca.</p></div></td></tr>
             {{/each}}
           </tbody>
         </table>

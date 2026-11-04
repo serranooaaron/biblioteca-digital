@@ -1,0 +1,9 @@
+{{#if overdue}}
+  <span class="badge badge--danger">Vencido hace {{overdueDays}} {{plural overdueDays "día" "días"}}</span>
+{{else if dueToday}}
+  <span class="badge badge--off">Vence hoy</span>
+{{else if dueSoon}}
+  <span class="badge badge--off">Vence en {{daysLeft}} {{plural daysLeft "día" "días"}}</span>
+{{else}}
+  <span class="badge badge--ok">Vence el {{date dueDate}}</span>
+{{/if}}
