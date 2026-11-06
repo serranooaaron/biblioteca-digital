@@ -6,7 +6,7 @@ Parte de la entrega final de Programación Backend III (Coderhouse, comisión 86
 
 ## Stack
 
-- Node.js 20 + Express 4
+- Node.js 24 + Express 4
 - Express-Handlebars (vistas) + JavaScript sin frameworks en el navegador
 - MongoDB + Mongoose 6
 - JWT + bcrypt + cookies `httpOnly`

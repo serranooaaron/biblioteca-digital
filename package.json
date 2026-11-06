@@ -4,6 +4,9 @@
   "description": "API REST para una biblioteca digital",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4 <25"
+  },
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
