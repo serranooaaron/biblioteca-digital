@@ -1,6 +1,7 @@
 import bookModel from '../dao/models/Book.js';
 import loanModel from '../dao/models/Loan.js';
 import userModel from '../dao/models/User.js';
+import reviewModel from '../dao/models/Review.js';
 import books from './books.js';
 import { createHash } from '../utils/index.js';
 
@@ -25,6 +26,19 @@ export const seedLoan = async ({ user, title, daysLeft }) => {
   await loanModel.create({ user: user._id, book: book._id, dueDate });
   await bookModel.updateOne({ _id: book._id }, { available: false, borrower: user._id });
   await userModel.updateOne({ _id: user._id }, { $push: { books: { _id: book._id } } });
+};
+
+// Reseña de ejemplo de un libro que el lector ya leyó (registra el préstamo devuelto) y recalcula el puntaje.
+export const seedReview = async ({ user, title, rating, comment }) => {
+  const book = await bookModel.findOne({ title });
+  if (!book) return;
+  await loanModel.create({ user: user._id, book: book._id, returned: true, returnedAt: new Date() });
+  await reviewModel.updateOne({ book: book._id, user: user._id }, { $set: { rating, comment } }, { upsert: true });
+  const [summary] = await reviewModel.aggregate([
+    { $match: { book: book._id } },
+    { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+  ]);
+  await bookModel.updateOne({ _id: book._id }, { ratingAvg: Math.round(summary.avg * 10) / 10, ratingCount: summary.count });
 };
 
 // Crea un usuario si todavía no existe ese email.

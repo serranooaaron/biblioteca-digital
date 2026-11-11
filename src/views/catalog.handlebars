@@ -40,8 +40,9 @@
       <article class="book-card" data-book="{{_id}}">
         <div class="book-card__cover">{{> cover}}</div>
         <div class="book-card__body">
-          <h2 class="book-card__title">{{title}}</h2>
+          <h2 class="book-card__title"><a href="/libros/{{_id}}">{{title}}</a></h2>
           <p class="book-card__author">{{author}} · {{publishedYear}}</p>
+          {{> rating avg=ratingAvg count=ratingCount}}
         </div>
         <div class="book-card__foot" data-book-actions>
           {{#if mine}}

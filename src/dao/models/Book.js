@@ -7,6 +7,9 @@ const schema = new mongoose.Schema({
   available: { type: Boolean, default: true },
   borrower: { type: mongoose.SchemaTypes.ObjectId, ref: 'Users' },
   cover: String,
+  // Se recalculan con cada reseña, así el catálogo no agrega todas las reseñas en cada listado.
+  ratingAvg: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 },
 });
 
 export default mongoose.model('Books', schema);

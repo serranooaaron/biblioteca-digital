@@ -24,11 +24,18 @@ const mongod = await MongoMemoryServer.create();
 process.env.MONGO_URL = mongod.getUri('biblioteca');
 process.env.JWT_SECRET ||= crypto.randomBytes(32).toString('hex');
 
-const { seedBooks, seedLoan, seedUser } = await import('../src/data/seeders.js');
+// Reseñas de ejemplo de libros que el lector ya devolvió.
+const DEMO_REVIEWS = [
+  { title: 'Cien años de soledad', rating: 5, comment: 'Lo terminé en una semana. Macondo se queda con uno.' },
+  { title: '1984', rating: 4, comment: 'Inquietante y muy actual.' },
+];
+
+const { seedBooks, seedLoan, seedReview, seedUser } = await import('../src/data/seeders.js');
 await mongoose.connect(process.env.MONGO_URL);
 await seedBooks();
 const [, reader] = await Promise.all(DEV_ACCOUNTS.map(seedUser));
 for (const loan of DEMO_LOANS) await seedLoan({ user: reader, ...loan });
+for (const review of DEMO_REVIEWS) await seedReview({ user: reader, ...review });
 await mongoose.disconnect();
 
 console.log('🧪 MongoDB en memoria listo. Cuentas de prueba:');

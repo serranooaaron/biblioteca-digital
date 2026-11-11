@@ -1,0 +1,8 @@
+{{#if count}}
+  <p class="rating {{#if size}}rating--{{size}}{{/if}}">
+    <span class="stars" aria-hidden="true">{{stars avg}}</span>
+    <span>{{score avg}}<span class="sr-only"> de 5 estrellas,</span> · {{count}} {{plural count "reseña" "reseñas"}}</span>
+  </p>
+{{else}}
+  <p class="rating rating--empty {{#if size}}rating--{{size}}{{/if}}">Sin reseñas</p>
+{{/if}}

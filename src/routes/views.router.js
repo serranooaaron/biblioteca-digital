@@ -1,5 +1,8 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { booksService, loansService, usersService } from '../services/index.js';
+import { getReviewsOf, hasBorrowed, toPublicReview } from '../controllers/reviews.controller.js';
+import { COMMENT_MAX } from '../dao/models/Review.js';
 import { requireAdmin, requireAuth } from '../middlewares/auth.js';
 import UserDTO from '../dto/User.dto.js';
 import BookDTO from '../dto/Book.dto.js';
@@ -65,6 +68,31 @@ router.get('/catalogo', asyncHandler(async (req, res) => {
     sort,
     hasFilters: Boolean(q || status || sort !== 'title'),
     loansLeft: req.user ? Math.max(0, 3 - myBookIds.size) : null,
+  });
+}));
+
+router.get('/libros/:bid', asyncHandler(async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.bid)) return next();
+  const book = await booksService.getBy({ _id: req.params.bid }).lean();
+  if (!book) return next();
+
+  const reviews = (await getReviewsOf(book._id)).map((review) => toPublicReview(review, req.user?.id));
+  const myReview = reviews.find((review) => review.mine) || null;
+  const canReview = req.user ? Boolean(myReview) || (await hasBorrowed(req.user.id, book._id)) : false;
+  const counts = [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((review) => review.rating === stars).length;
+    return { stars, count, percent: reviews.length ? Math.round((count / reviews.length) * 100) : 0 };
+  });
+
+  res.render('book', {
+    title: book.title,
+    book: BookDTO.getPublicFrom(book),
+    reviews,
+    myReview,
+    canReview,
+    counts,
+    commentMax: COMMENT_MAX,
+    loginNext: encodeURIComponent(req.originalUrl),
   });
 }));
 

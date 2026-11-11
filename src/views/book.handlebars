@@ -1,0 +1,92 @@
+<main class="container">
+  <nav class="crumbs" aria-label="Ruta"><a class="link" href="/catalogo">← Volver al catálogo</a></nav>
+
+  <article class="book-detail" data-book="{{book._id}}">
+    <div class="book-detail__cover">{{#with book}}{{> cover}}{{/with}}</div>
+    <div class="book-detail__info">
+      <p class="eyebrow">{{book.publishedYear}}</p>
+      <h1>{{book.title}}</h1>
+      <p class="book-detail__author">{{book.author}}</p>
+      {{> rating avg=book.ratingAvg count=book.ratingCount size="lg"}}
+      <p class="book-detail__status">
+        {{#if book.available}}<span class="badge badge--ok">Disponible</span>{{else}}<span class="badge badge--off">Prestado</span>{{/if}}
+      </p>
+    </div>
+  </article>
+
+  <section class="section reviews" aria-labelledby="reviews-title">
+    <h2 class="section__title" id="reviews-title">Reseñas de lectores</h2>
+
+    <div class="reviews__layout">
+      <aside class="reviews__summary">
+        {{#if reviews.length}}
+          <p class="reviews__avg"><strong>{{score book.ratingAvg}}</strong> de 5</p>
+          <ul class="bars" aria-label="Reseñas por puntaje">
+            {{#each counts}}
+              <li>
+                <span>{{this.stars}} ★</span>
+                <span class="bars__track" aria-hidden="true"><span class="bars__fill" style="width: {{percent}}%"></span></span>
+                <span class="bars__count">{{count}}<span class="sr-only"> {{plural count "reseña" "reseñas"}} de {{this.stars}} {{plural this.stars "estrella" "estrellas"}}</span></span>
+              </li>
+            {{/each}}
+          </ul>
+        {{/if}}
+
+        {{#if canReview}}
+          <form class="review-form" data-review-form novalidate>
+            <h3>{{#if myReview}}Tu reseña{{else}}¿Qué te pareció?{{/if}}</h3>
+            <fieldset class="star-input">
+              <legend>Puntaje</legend>
+              <div class="star-input__options">
+                {{#each (range 1 5)}}
+                  <input type="radio" id="star-{{this}}" name="rating" value="{{this}}" {{#if (eq this @root.myReview.rating)}}checked{{/if}} />
+                  <label for="star-{{this}}" title="{{this}} {{plural this "estrella" "estrellas"}}"><span aria-hidden="true">★</span><span class="sr-only">{{this}} {{plural this "estrella" "estrellas"}}</span></label>
+                {{/each}}
+              </div>
+            </fieldset>
+            <div class="field">
+              <label for="comment">Comentario <span class="field__hint">(opcional)</span></label>
+              <textarea class="input" id="comment" name="comment" rows="4" maxlength="{{commentMax}}" aria-describedby="comment-hint">{{myReview.comment}}</textarea>
+              <span class="field__hint" id="comment-hint" data-counter>Hasta {{commentMax}} caracteres.</span>
+            </div>
+            <p class="form-error" data-review-error role="alert"></p>
+            <div class="review-form__actions">
+              <button class="btn btn--primary" type="submit">{{#if myReview}}Guardar cambios{{else}}Publicar reseña{{/if}}</button>
+              {{#if myReview}}<button class="btn btn--danger" type="button" data-delete-review="{{myReview._id}}">Borrar</button>{{/if}}
+            </div>
+          </form>
+        {{else if user}}
+          <p class="reviews__note">Podrás dejar tu reseña después de pedir este libro prestado.</p>
+        {{else}}
+          <p class="reviews__note"><a class="link" href="/login?next={{loginNext}}">Ingresa</a> para dejar tu reseña de los libros que leíste.</p>
+        {{/if}}
+      </aside>
+
+      <div class="review-list">
+        {{#each reviews}}
+          <article class="review {{#if mine}}review--mine{{/if}}" data-review="{{_id}}">
+            <header class="review__head">
+              <span class="avatar-chip avatar-chip--sm" aria-hidden="true">{{initials author}}</span>
+              <div>
+                <strong>{{author}}{{#if mine}} <span class="badge">Tú</span>{{/if}}</strong>
+                <small>{{date createdAt}}</small>
+              </div>
+              <span class="stars" role="img" aria-label="{{this.rating}} de 5 estrellas">{{stars rating}}</span>
+            </header>
+            {{#if comment}}<p class="review__comment">{{comment}}</p>{{/if}}
+            {{#if @root.isAdmin}}{{#unless mine}}
+              <button class="btn btn--sm btn--ghost review__remove" type="button" data-delete-review="{{_id}}">Quitar reseña</button>
+            {{/unless}}{{/if}}
+          </article>
+        {{else}}
+          <div class="empty-state">
+            <h3>Todavía no hay reseñas</h3>
+            <p>Quien lo lea primero puede contar qué le pareció.</p>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/js/book.js" type="module"></script>
