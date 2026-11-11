@@ -1,6 +1,7 @@
 import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import { COOKIE_NAME, cookieOptions, signToken } from "../utils/auth.js";
+import { loginLimiter, waitMessage } from "../utils/loginLimiter.js";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -29,11 +30,17 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
+    // Bloqueado por demasiados fallos: ni siquiera se compara la contraseña.
+    const wait = loginLimiter.retryAfter(req);
+    if (wait) return res.status(429).set("Retry-After", String(wait)).send({ status: "error", error: waitMessage(wait) });
+
     const user = await usersService.getUserByEmail(String(email).toLowerCase().trim());
     // Mismo mensaje si el email no existe o la contraseña es incorrecta: no revela qué cuentas existen.
     if (!user || !(await passwordValidation(user, String(password)))) {
+        loginLimiter.fail(req);
         return res.status(401).send({ status: "error", error: "Email o contraseña incorrectos" });
     }
+    loginLimiter.succeed(req);
     res.cookie(COOKIE_NAME, signToken(user), cookieOptions()).send({ status: "success", message: "Logged in", payload: { role: user.role } });
 }
 

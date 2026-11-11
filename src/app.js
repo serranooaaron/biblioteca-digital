@@ -41,6 +41,9 @@ const specs = swaggerJSDoc(swaggerOptions);
 app.use('/docs', swaggerUIExpress.serve, swaggerUIExpress.setup(specs));
 
 app.disable('x-powered-by');
+// Detrás del proxy de la plataforma (Render), req.ip sería siempre la IP del proxy:
+// TRUST_PROXY indica cuántos saltos de proxy creer para leer la IP real del visitante.
+if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 // Archivos públicos: estilos, scripts del navegador y portadas subidas (/img/<archivo>).
