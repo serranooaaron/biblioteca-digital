@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import BookDTO from '../dto/Book.dto.js';
 import { booksService, reviewsService } from '../services/index.js';
 import { escapeRegex } from '../utils/index.js';
@@ -9,7 +10,8 @@ const getAllBooks = async (req, res) => {
   const filter = {};
   const q = req.query.q ? String(req.query.q).trim().slice(0, 80) : '';
   if (q) {
-    const pattern = { $regex: escapeRegex(q), $options: 'i' };
+    // Operador puesto a propósito por el servidor: se marca como confiable para sanitizeFilter.
+    const pattern = mongoose.trusted({ $regex: escapeRegex(q), $options: 'i' });
     filter.$or = [{ title: pattern }, { author: pattern }];
   }
   if (req.query.available === 'true' || req.query.available === 'false') {

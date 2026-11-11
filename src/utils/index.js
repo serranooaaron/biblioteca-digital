@@ -3,7 +3,7 @@ import {fileURLToPath} from 'url';
 import { dirname } from 'path';
 
 export const createHash = async(password) =>{
-    const salts = await bcrypt.genSalt(10);
+    const salts = await bcrypt.genSalt(12);
     return bcrypt.hash(password,salts);
 }
 

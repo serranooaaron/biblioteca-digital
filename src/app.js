@@ -20,6 +20,8 @@ import __dirname from './utils/index.js';
 
 dotenv.config({ quiet: true });
 mongoose.set('strictQuery', true);
+// Un objeto con operadores ($ne, $gt...) que llegue desde el cliente dentro de un filtro se toma como valor literal.
+mongoose.set('sanitizeFilter', true);
 
 const app = express();
 const PORT = process.env.PORT || 8081;
