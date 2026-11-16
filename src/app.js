@@ -16,6 +16,7 @@ import sessionsRouter from './routes/sessions.router.js';
 import viewsRouter from './routes/views.router.js';
 import helpers from './utils/handlebars.js';
 import { attachUser } from './middlewares/auth.js';
+import securityHeaders from './middlewares/securityHeaders.js';
 import { getJwtSecret } from './utils/auth.js';
 import __dirname from './utils/index.js';
 
@@ -40,6 +41,9 @@ const swaggerOptions = {
   apis: ['src/docs/**/*.yaml'],
 };
 
+// Antes que cualquier ruta, así también cubren la documentación y los archivos públicos.
+app.use(securityHeaders);
+
 const specs = swaggerJSDoc(swaggerOptions);
 app.use('/docs', swaggerUIExpress.serve, swaggerUIExpress.setup(specs));
 
@@ -56,6 +60,12 @@ app.use(attachUser);
 app.engine('handlebars', engine({ helpers }));
 app.set('view engine', 'handlebars');
 app.set('views', `${__dirname}/../views`);
+
+// Chequeo de salud para la plataforma de deploy: liviano y sin datos internos.
+app.get('/api/health', (req, res) => {
+  const ready = mongoose.connection.readyState === 1;
+  res.status(ready ? 200 : 503).send({ status: ready ? 'ok' : 'unavailable' });
+});
 
 app.use('/api/chat', chatRouter);
 app.use('/api/users', usersRouter);
