@@ -40,7 +40,9 @@ body {
 
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
-h1, h2, h3 { font-family: var(--serif); line-height: 1.15; margin: 0; font-weight: 700; }
+h1, h2, h3 { font-family: var(--serif); line-height: 1.15; margin: 0; font-weight: 700; overflow-wrap: break-word; hyphens: auto; }
+/* Títulos y autores cargados por el admin: una palabra larga se corta en vez de salirse de su columna. */
+.book-card__title, .book-card__author, .book-detail h1, .book-detail__author { overflow-wrap: anywhere; }
 p { margin: 0; }
 
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); }
@@ -145,7 +147,7 @@ main { flex: 1; padding-bottom: 72px; }
 .cover__title { font-family: var(--serif); font-weight: 700; font-size: clamp(0.95rem, 1.5vw, 1.25rem); line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
 .hero__book .cover__title { font-size: clamp(0.72rem, 0.9vw, 0.88rem); }
 .hero__book .cover__author { font-size: 0.68rem; }
-.cover__author { font-size: 0.78rem; opacity: 0.85; border-top: 1px solid rgb(255 255 255 / 0.35); padding-top: 8px; }
+.cover__author { font-size: 0.78rem; opacity: 0.85; border-top: 1px solid rgb(255 255 255 / 0.35); padding-top: 8px; overflow-wrap: anywhere; }
 
 /* ===================== Inicio ===================== */
 .hero { padding: clamp(40px, 7vw, 88px) 0 clamp(24px, 4vw, 48px); }
@@ -240,7 +242,7 @@ main { flex: 1; padding-bottom: 72px; }
 .book-card__body { flex: 1; }
 .book-card__title { font-size: 1.05rem; }
 .book-card__author { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
-.book-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.book-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
 /* ===================== Préstamos ===================== */
 .loan-list { display: grid; gap: 14px; }
@@ -369,10 +371,11 @@ main { flex: 1; padding-bottom: 72px; }
 .star-input label:active { transform: scale(0.92); }
 .star-input input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.review-list { display: grid; gap: 12px; }
+.review-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .review { padding: 16px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); }
 .review--mine { border-color: var(--accent); }
 .review__head { display: flex; align-items: center; gap: 12px; }
+.review__head > div { min-width: 0; overflow-wrap: anywhere; }
 .review__head small { display: block; color: var(--muted); font-size: 0.8rem; }
 .review__head .stars { margin-left: auto; }
 .review__comment { margin-top: 10px; white-space: pre-line; overflow-wrap: anywhere; }
@@ -409,9 +412,23 @@ main { flex: 1; padding-bottom: 72px; }
   .loan .btn { grid-column: 1 / -1; }
   .lend-form, .modal__row { grid-template-columns: 1fr; }
   .book-detail { grid-template-columns: 120px minmax(0, 1fr); align-items: center; }
-  .reviews__layout { grid-template-columns: 1fr; }
+  .reviews__layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Teléfonos angostos (320-420 px): las tapas del estante son muy chicas para el autor,
+   los filtros de disponibilidad ocupan todo el ancho y el encabezado se compacta. */
+@media (max-width: 420px) {
+  .site-header__inner { gap: 8px; }
+  .brand { gap: 8px; min-width: 0; }
+  .brand__mark { width: 34px; height: 34px; flex-shrink: 0; }
+  .brand__name { font-size: 1.05rem; line-height: 1.05; }
+  .header-actions { gap: 6px; flex-shrink: 0; }
+  .hero__book .cover__author { display: none; }
+  .segmented { display: flex; width: 100%; }
+  .segmented label { flex: 1; text-align: center; }
+  .segmented span { padding: 7px 6px; }
 }
