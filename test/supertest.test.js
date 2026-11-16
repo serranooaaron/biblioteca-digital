@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/app.js';
 import { loginAs, randomPassword } from './helpers/auth.js';
+import { loginLimiter, registerLimiter } from '../src/utils/loginLimiter.js';
 
 const { expect } = chai;
 const requester = supertest(app);
@@ -16,8 +17,20 @@ describe('Digital Library API', function () {
     await mongoose.connect(mongoServer.getUri());
   });
 
+  beforeEach(() => { loginLimiter.clear(); registerLimiter.clear(); });
   afterEach(async function () { await mongoose.connection.dropDatabase(); });
   after(async function () { await mongoose.disconnect(); await mongoServer.stop(); });
+
+  it('frena a una IP que registra más de 10 cuentas en una hora', async function () {
+    for (let i = 0; i < 10; i++) {
+      const response = await requester.post('/api/sessions/register').send({ ...reader, email: `nuevo${i}@example.com` });
+      expect(response.status).to.equal(201);
+    }
+    const blocked = await requester.post('/api/sessions/register').send({ ...reader, email: 'once@example.com' });
+    expect(blocked.status).to.equal(429);
+    expect(blocked.body.error).to.match(/Demasiados registros desde esta conexión/);
+    expect(Number(blocked.headers['retry-after'])).to.be.within(1, 60 * 60);
+  });
 
   const reader = { first_name: 'Test', last_name: 'User', email: 'reader@example.com', password: randomPassword() };
 

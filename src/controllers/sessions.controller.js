@@ -1,11 +1,17 @@
 import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import { COOKIE_NAME, cookieOptions, signToken } from "../utils/auth.js";
-import { loginLimiter, waitMessage } from "../utils/loginLimiter.js";
+import { loginLimiter, registerLimiter, waitMessage } from "../utils/loginLimiter.js";
 
 const MIN_PASSWORD_LENGTH = 8;
 
 const register = async (req, res) => {
+    const wait = registerLimiter.retryAfter(req);
+    if (wait) {
+        return res.status(429).set("Retry-After", String(wait)).send({ status: "error", error: waitMessage(wait, "Demasiados registros desde esta conexión") });
+    }
+    registerLimiter.fail(req);
+
     const { first_name, last_name, email, password } = req.body;
     if (!first_name || !last_name || !email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
     if (String(password).length < MIN_PASSWORD_LENGTH) {
