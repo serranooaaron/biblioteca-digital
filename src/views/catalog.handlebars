@@ -7,7 +7,7 @@
       {{#if user}}
         {{#if (eq loansLeft 0)}}Ya tienes 3 libros prestados: devuelve uno para pedir otro.{{else}}Puedes pedir {{loansLeft}} {{plural loansLeft "libro más" "libros más"}}.{{/if}}
       {{else}}
-        <a class="link" href="/login?next=%2Fcatalogo">Ingresa</a> para pedir libros prestados.
+        <a class="link" href="/login?next={{loginNext}}">Ingresa</a> para pedir o reservar libros.
       {{/if}}
     </p>
   </header>
@@ -37,28 +37,14 @@
 
   <section class="book-grid">
     {{#each books}}
-      <article class="book-card" data-book="{{_id}}">
+      <article class="book-card">
         <div class="book-card__cover">{{> cover}}</div>
         <div class="book-card__body">
           <h2 class="book-card__title"><a href="/libros/{{_id}}">{{title}}</a></h2>
           <p class="book-card__author">{{author}} · {{publishedYear}}</p>
           {{> rating avg=ratingAvg count=ratingCount}}
         </div>
-        <div class="book-card__foot" data-book-actions>
-          {{#if mine}}
-            <span class="badge badge--ok">Lo tienes tú</span>
-            <a class="btn btn--sm btn--ghost" href="/mis-prestamos">Ver</a>
-          {{else if available}}
-            <span class="badge badge--ok">Disponible</span>
-            {{#if @root.user}}
-              <button class="btn btn--sm btn--primary" type="button" data-borrow {{#if (eq @root.loansLeft 0)}}disabled title="Ya tienes 3 libros prestados"{{/if}}>Pedir</button>
-            {{else}}
-              <a class="btn btn--sm" href="/login?next=%2Fcatalogo">Pedir</a>
-            {{/if}}
-          {{else}}
-            <span class="badge badge--off">Prestado</span>
-          {{/if}}
-        </div>
+        <div class="book-card__foot">{{> bookActions}}</div>
       </article>
     {{else}}
       <div class="empty-state">

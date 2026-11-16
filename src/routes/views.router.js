@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { booksService, loansService, reviewsService, usersService } from '../services/index.js';
+import { booksService, loansService, reservationsService, reviewsService, usersService } from '../services/index.js';
 import { getMyReview, getReviewsPage, hasBorrowed, toPublicReview } from '../controllers/reviews.controller.js';
 import { COMMENT_MAX } from '../dao/models/Review.js';
 import { requireAdmin, requireAuth } from '../middlewares/auth.js';
@@ -9,19 +9,44 @@ import BookDTO from '../dto/Book.dto.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
 import { LOAN_DAYS, loanStatus } from '../utils/loans.js';
+import { HOLD_DAYS, MAX_RESERVATIONS, bookState, isHeldFor, releaseExpiredHolds, reservationsOf } from '../utils/reservations.js';
 
 const router = Router();
 
-// Datos comunes a todas las vistas: ruta actual (para marcar el menú) y préstamos vencidos del lector.
+// Datos comunes a todas las vistas: ruta actual (para marcar el menú), préstamos vencidos del lector
+// y reservas que ya puede retirar.
 router.use(asyncHandler(async (req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.overdueCount = 0;
+  res.locals.readyHolds = [];
+  await releaseExpiredHolds();
   if (req.user) {
-    const active = await loansService.getAll({ user: req.user.id, returned: false }).select('dueDate createdAt returned').lean();
+    const [active, ready] = await Promise.all([
+      loansService.getAll({ user: req.user.id, returned: false }).select('dueDate createdAt returned').lean(),
+      booksService.getAll({ heldFor: req.user.id, available: true }).select('title heldUntil').lean(),
+    ]);
     res.locals.overdueCount = active.filter((loan) => loanStatus(loan).overdue).length;
+    res.locals.readyHolds = ready;
   }
   next();
 }));
+
+// Lo que el lector logueado tiene prestado y reservado, para decidir qué botón mostrar en cada libro.
+const readerContext = async (req) => {
+  const context = { userId: req.user?.id, myBookIds: new Set(), myReservations: new Map(), waiting: await reservationsService.waitingByBook() };
+  if (req.user) {
+    const [me, myReservations] = await Promise.all([usersService.getUserById(req.user.id), reservationsOf(req.user.id)]);
+    me?.books.forEach((entry) => context.myBookIds.add(String(entry._id)));
+    context.myReservations = myReservations;
+  }
+  return context;
+};
+
+// Límites que le quedan al lector: se usan para deshabilitar "Pedir" y "Reservar" con su explicación.
+const readerLimits = (req, context) => ({
+  loansLeft: req.user ? Math.max(0, 3 - context.myBookIds.size) : null,
+  reservationsLeft: req.user ? Math.max(0, MAX_RESERVATIONS - context.myReservations.size) : null,
+});
 
 router.get('/', asyncHandler(async (req, res) => {
   const books = await booksService.getAll({});
@@ -54,21 +79,17 @@ router.get('/catalogo', asyncHandler(async (req, res) => {
   }
   if (status) filter.available = status === 'available';
 
-  const books = await booksService.getAll(filter).sort(SORTS[sort]).lean();
-  const myBookIds = new Set();
-  if (req.user) {
-    const me = await usersService.getUserById(req.user.id);
-    me?.books.forEach((entry) => myBookIds.add(String(entry._id)));
-  }
+  const [books, context] = await Promise.all([booksService.getAll(filter).sort(SORTS[sort]).lean(), readerContext(req)]);
 
   res.render('catalog', {
     title: 'Catálogo',
-    books: books.map((book) => ({ ...BookDTO.getPublicFrom(book), mine: myBookIds.has(String(book._id)) })),
+    books: books.map((book) => ({ ...BookDTO.getPublicFrom(book), ...bookState(book, context) })),
     q,
     status,
     sort,
     hasFilters: Boolean(q || status || sort !== 'title'),
-    loansLeft: req.user ? Math.max(0, 3 - myBookIds.size) : null,
+    loginNext: encodeURIComponent(req.originalUrl),
+    ...readerLimits(req, context),
   });
 }));
 
@@ -77,10 +98,11 @@ router.get('/libros/:bid', asyncHandler(async (req, res, next) => {
   const book = await booksService.getBy({ _id: req.params.bid }).lean();
   if (!book) return next();
 
-  const [{ reviews, page, totalPages, total }, byRating, mine] = await Promise.all([
+  const [{ reviews, page, totalPages, total }, byRating, mine, context] = await Promise.all([
     getReviewsPage(book._id, { page: req.query.pagina }),
     reviewsService.countByRating(book._id),
     req.user ? getMyReview(book._id, req.user.id) : null,
+    readerContext(req),
   ]);
   const myReview = mine ? toPublicReview(mine, req.user.id) : null;
   const canReview = req.user ? Boolean(myReview) || (await hasBorrowed(req.user.id, book._id)) : false;
@@ -92,7 +114,9 @@ router.get('/libros/:bid', asyncHandler(async (req, res, next) => {
 
   res.render('book', {
     title: book.title,
-    book: BookDTO.getPublicFrom(book),
+    book: { ...BookDTO.getPublicFrom(book), ...bookState(book, context) },
+    ...readerLimits(req, context),
+    holdDays: HOLD_DAYS,
     reviews: reviews.map((review) => toPublicReview(review, req.user?.id)),
     totalReviews: total,
     pagination: totalPages > 1 ? {
@@ -117,11 +141,34 @@ router.get('/mis-prestamos', requireAuth, asyncHandler(async (req, res) => {
   const withBook = loans
     .filter((loan) => loan.book)
     .map((loan) => ({ ...loan, ...loanStatus(loan), book: BookDTO.getPublicFrom(loan.book) }));
+  const active = withBook.filter((loan) => !loan.returned).sort(byDueDate);
+
+  // Reservas: primero las que ya se pueden retirar, después por lugar en la lista.
+  const positions = await reservationsOf(req.user.id);
+  const reserved = await reservationsService.getAll({ user: req.user.id }).populate('book').lean();
+  const reservations = reserved
+    .filter((reservation) => reservation.book)
+    .map((reservation) => {
+      const ready = isHeldFor(reservation.book, req.user.id);
+      return {
+        book: BookDTO.getPublicFrom(reservation.book),
+        createdAt: reservation.createdAt,
+        position: positions.get(String(reservation.book._id))?.position ?? 1,
+        ready,
+        readyUntil: ready ? reservation.book.heldUntil : null,
+      };
+    })
+    .sort((a, b) => Number(b.ready) - Number(a.ready) || a.position - b.position);
+
   res.render('loans', {
     title: 'Mis préstamos',
-    active: withBook.filter((loan) => !loan.returned).sort(byDueDate),
+    active,
+    reservations,
     history: withBook.filter((loan) => loan.returned),
     loanDays: LOAN_DAYS,
+    holdDays: HOLD_DAYS,
+    maxReservations: MAX_RESERVATIONS,
+    loansLeft: Math.max(0, 3 - active.length),
   });
 }));
 
@@ -129,10 +176,11 @@ const ADMIN_TABS = ['libros', 'prestamos', 'usuarios'];
 
 router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {
   const tab = ADMIN_TABS.includes(req.query.tab) ? req.query.tab : 'libros';
-  const [books, activeLoans, users] = await Promise.all([
+  const [books, activeLoans, users, waiting] = await Promise.all([
     booksService.getAll({}).sort({ title: 1 }).lean(),
     loansService.getAll({ returned: false }).sort({ createdAt: -1 }).populate('user', 'first_name last_name email').populate('book', 'title author').lean(),
     usersService.getAll({}).sort({ last_name: 1, first_name: 1 }).lean(),
+    reservationsService.waitingByBook(),
   ]);
 
   const currentLoans = activeLoans
@@ -146,8 +194,9 @@ router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {
     isBooks: tab === 'libros',
     isLoans: tab === 'prestamos',
     isUsers: tab === 'usuarios',
-    books: books.map(BookDTO.getPublicFrom),
-    availableBooks: books.filter((book) => book.available),
+    books: books.map((book) => ({ ...BookDTO.getPublicFrom(book), waiting: waiting[String(book._id)] || 0 })),
+    // Los apartados no se ofrecen para prestar a mano: esperan al lector de la lista.
+    availableBooks: books.filter((book) => book.available && !BookDTO.getPublicFrom(book).held),
     activeLoans: currentLoans,
     users: users.map((user) => ({ ...UserDTO.getPublicFrom(user), isMe: String(user._id) === req.user.id })),
     stats: {

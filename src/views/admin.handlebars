@@ -38,7 +38,10 @@
                   </div>
                 </td>
                 <td>{{publishedYear}}</td>
-                <td>{{#if available}}<span class="badge badge--ok">Disponible</span>{{else}}<span class="badge badge--off">Prestado</span>{{/if}}</td>
+                <td>
+                  {{#if held}}<span class="badge badge--off">Apartado</span>{{else if available}}<span class="badge badge--ok">Disponible</span>{{else}}<span class="badge badge--off">Prestado</span>{{/if}}
+                  {{#if waiting}}<small>{{waiting}} en espera</small>{{/if}}
+                </td>
                 <td>
                   <div class="table__actions">
                     <button class="btn btn--sm" type="button" data-edit-book>Editar</button>

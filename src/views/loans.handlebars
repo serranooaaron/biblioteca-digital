@@ -2,7 +2,7 @@
   <header class="page-head">
     <p class="eyebrow">Tu cuenta</p>
     <h1>Mis préstamos</h1>
-    <p>Préstamos activos: {{active.length}} de 3. Cada préstamo dura {{loanDays}} días.</p>
+    <p>Préstamos activos: {{active.length}} de 3. Cada préstamo dura {{loanDays}} días. Reservas: {{reservations.length}} de {{maxReservations}}.</p>
   </header>
 
   <section aria-labelledby="active-title">
@@ -25,6 +25,39 @@
         <p>Elige tu próxima lectura en el catálogo.</p>
         <a class="btn btn--primary" href="/catalogo">Ir al catálogo</a>
       </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="reservas-title">
+    <h2 class="section__title" id="reservas-title">Mis reservas</h2>
+    <div class="loan-list" data-reservation-list>
+      {{#each reservations}}
+        <article class="loan {{#if ready}}loan--ready{{/if}}" data-book-actions data-book-id="{{book._id}}" data-book-title="{{book.title}}">
+          <div class="loan__cover">{{#with book}}{{> cover}}{{/with}}</div>
+          <div class="loan__info">
+            <h3><a href="/libros/{{book._id}}">{{book.title}}</a></h3>
+            <p class="loan__author">{{book.author}} · {{book.publishedYear}}</p>
+            <p class="loan__meta">Reservado el {{date createdAt}}</p>
+            <p class="loan__due">
+              {{#if ready}}
+                <span class="badge badge--ok">Listo para retirar hasta el {{date readyUntil}}</span>
+              {{else}}
+                <span class="badge">Lugar {{position}} en la lista</span>
+              {{/if}}
+            </p>
+          </div>
+          <div class="loan__actions">
+            {{#if ready}}<button class="btn btn--primary" type="button" data-borrow {{#if (eq @root.loansLeft 0)}}disabled title="Ya tienes 3 libros prestados: devuelve uno para retirarlo"{{/if}}>Pedir</button>{{/if}}
+            <button class="btn btn--ghost" type="button" data-cancel-reservation>Cancelar reserva</button>
+          </div>
+        </article>
+      {{else}}
+        <div class="empty-state">
+          <h3>No tienes reservas</h3>
+          <p>Si un libro está prestado, resérvalo desde el catálogo: al devolverse queda apartado {{holdDays}} días para ti.</p>
+          <a class="btn" href="/catalogo?status=loaned">Ver libros prestados</a>
+        </div>
+      {{/each}}
     </div>
   </section>
 
@@ -52,3 +85,4 @@
 </main>
 
 <script src="/js/loans.js" type="module"></script>
+<script src="/js/bookActions.js" type="module"></script>

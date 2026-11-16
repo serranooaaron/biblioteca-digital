@@ -11,6 +11,7 @@ import usersRouter from './routes/users.router.js';
 import booksRouter from './routes/books.router.js';
 import chatRouter from './routes/chat.router.js';
 import loansRouter from './routes/loans.router.js';
+import reservationsRouter from './routes/reservations.router.js';
 import sessionsRouter from './routes/sessions.router.js';
 import viewsRouter from './routes/views.router.js';
 import helpers from './utils/handlebars.js';
@@ -60,6 +61,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/books', booksRouter);
 app.use('/api/loans', loansRouter);
+app.use('/api/reservations', reservationsRouter);
 app.use('/api/sessions', sessionsRouter);
 
 app.use('/api', (req, res) => res.status(404).send({ status: 'error', error: 'Ruta no encontrada' }));

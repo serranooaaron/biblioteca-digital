@@ -1,4 +1,5 @@
 import { api, reloadWith, toast } from './app.js';
+import './bookActions.js';
 
 const bookId = document.querySelector('[data-book]')?.dataset.book;
 const form = document.querySelector('[data-review-form]');

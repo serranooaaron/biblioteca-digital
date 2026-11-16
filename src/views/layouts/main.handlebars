@@ -53,6 +53,14 @@
       {{/unless}}
     {{/if}}
 
+    {{#if readyHolds.length}}
+      {{#unless (eq currentPath "/mis-prestamos")}}
+        <a class="ready-alert" href="/mis-prestamos#reservas-title" data-ready-alert>
+          <span class="container">{{#if (eq readyHolds.length 1)}}Tu reserva de “{{readyHolds.[0].title}}” ya está lista: retírala antes del {{date readyHolds.[0].heldUntil}}{{else}}Tienes {{readyHolds.length}} reservas listas para retirar{{/if}} →</span>
+        </a>
+      {{/unless}}
+    {{/if}}
+
     {{{body}}}
 
     <footer class="site-footer">

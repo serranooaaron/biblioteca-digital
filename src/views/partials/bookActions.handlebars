@@ -1,0 +1,30 @@
+{{!-- Estado de un libro y lo que el lector puede hacer con él: pedirlo, reservarlo o ver su lugar en la lista. --}}
+<div class="book-actions" data-book-actions data-book-id="{{_id}}" data-book-title="{{title}}">
+  {{#if mine}}
+    <span class="badge badge--ok">Lo tienes tú</span>
+    <a class="btn btn--sm btn--ghost" href="/mis-prestamos">Ver</a>
+  {{else if canBorrow}}
+    <span class="badge badge--ok">{{#if heldForMe}}Apartado para ti{{else}}Disponible{{/if}}</span>
+    {{#if @root.user}}
+      <button class="btn btn--sm btn--primary" type="button" data-borrow {{#if (eq @root.loansLeft 0)}}disabled title="Ya tienes 3 libros prestados"{{/if}}>Pedir</button>
+    {{else}}
+      <a class="btn btn--sm" href="/login?next={{@root.loginNext}}">Pedir</a>
+    {{/if}}
+  {{else}}
+    <span class="badge badge--off">{{#if heldForOther}}Apartado{{else}}Prestado{{/if}}</span>
+    {{#if reservedByMe}}
+      <button class="btn btn--sm btn--ghost" type="button" data-cancel-reservation>Salir de la lista</button>
+    {{else if @root.user}}
+      <button class="btn btn--sm" type="button" data-reserve {{#if (eq @root.reservationsLeft 0)}}disabled title="Ya tienes 3 reservas"{{/if}}>Reservar</button>
+    {{else}}
+      <a class="btn btn--sm" href="/login?next={{@root.loginNext}}">Reservar</a>
+    {{/if}}
+  {{/if}}
+  {{#if reservedByMe}}
+    <p class="book-actions__note">Estás en la lista: lugar {{position}} de {{waiting}}.</p>
+  {{else if heldForMe}}
+    <p class="book-actions__note">Te espera hasta el {{date heldUntil}}.</p>
+  {{else if waiting}}
+    <p class="book-actions__note">{{waiting}} {{plural waiting "lector espera" "lectores esperan"}} este libro.</p>
+  {{/if}}
+</div>

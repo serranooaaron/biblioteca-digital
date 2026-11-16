@@ -2,6 +2,7 @@ import bookModel from '../dao/models/Book.js';
 import loanModel from '../dao/models/Loan.js';
 import userModel from '../dao/models/User.js';
 import reviewModel from '../dao/models/Review.js';
+import reservationModel from '../dao/models/Reservation.js';
 import books from './books.js';
 import { createHash } from '../utils/index.js';
 
@@ -39,6 +40,13 @@ export const seedReview = async ({ user, title, rating, comment }) => {
     { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
   ]);
   await bookModel.updateOne({ _id: book._id }, { ratingAvg: Math.round(summary.avg * 10) / 10, ratingCount: summary.count });
+};
+
+// Reserva de ejemplo: el libro debe estar prestado a otro usuario.
+export const seedReservation = async ({ user, title }) => {
+  const book = await bookModel.findOne({ title });
+  if (!book) return;
+  await reservationModel.updateOne({ book: book._id, user: user._id }, { $setOnInsert: { book: book._id, user: user._id } }, { upsert: true });
 };
 
 // Crea un usuario si todavía no existe ese email.

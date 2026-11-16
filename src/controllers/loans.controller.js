@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import BookDTO from '../dto/Book.dto.js';
-import { booksService, loansService, usersService } from '../services/index.js';
+import { booksService, loansService, reservationsService, usersService } from '../services/index.js';
 import { dueDateFrom, loanStatus } from '../utils/loans.js';
+import { assignHold, isHeld, isHeldFor, releaseExpiredHolds } from '../utils/reservations.js';
 
 const MAX_ACTIVE_LOANS = 3;
 const USER_FIELDS = 'first_name last_name email';
@@ -48,16 +49,23 @@ const lendBook = async (res, uid, bid) => {
   if (!mongoose.isValidObjectId(bid)) return res.status(404).send({ status: 'error', error: 'Book not found' });
   const user = await usersService.getUserById(uid);
   if (!user) return res.status(404).send({ status: 'error', error: 'User not found' });
+  await releaseExpiredHolds();
   const book = await booksService.getBy({ _id: bid });
   if (!book) return res.status(404).send({ status: 'error', error: 'Book not found' });
   if (!book.available) return res.status(400).send({ status: 'error', error: 'Book is already loaned' });
+  // Devuelto pero apartado: solo lo retira el lector al que le toca en la lista de espera.
+  if (isHeld(book) && !isHeldFor(book, user._id)) {
+    return res.status(409).send({ status: 'error', error: 'Este libro está reservado para otro lector' });
+  }
   if (user.books.length >= MAX_ACTIVE_LOANS) {
     return res.status(400).send({ status: 'error', error: `Puedes tener hasta ${MAX_ACTIVE_LOANS} libros prestados a la vez` });
   }
 
   user.books.push(book._id);
   await usersService.update(user._id, { books: user.books });
-  await booksService.update(book._id, { available: false, borrower: user._id });
+  await booksService.update(book._id, { available: false, borrower: user._id, heldFor: null, heldUntil: null });
+  // Quien retira el libro sale de su lista de espera.
+  await reservationsService.deleteMany({ book: book._id, user: user._id });
   const loan = await loansService.create({ user: user._id, book: book._id, dueDate: dueDateFrom() });
   res.send({ status: 'success', message: 'Book loaned', payload: loan._id });
 };
@@ -77,6 +85,8 @@ const returnLoan = async (req, res) => {
 
   await loansService.update(loan._id, { returned: true, returnedAt: new Date() });
   await booksService.update(loan.book, { available: true, borrower: null });
+  // Si alguien lo esperaba, queda apartado para el primero de la lista.
+  await assignHold(loan.book);
   const user = await usersService.getUserById(loan.user);
   if (user) {
     const books = user.books.filter((entry) => String(entry._id) !== String(loan.book));

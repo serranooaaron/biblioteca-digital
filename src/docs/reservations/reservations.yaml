@@ -1,0 +1,48 @@
+paths:
+  /api/reservations/mine:
+    get:
+      tags: [Reservations]
+      summary: Listar las reservas del lector logueado con su lugar en cada lista
+      responses:
+        '200':
+          description: Reservas del lector.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  payload: { type: array, items: { $ref: '#/components/schemas/Reservation' } }
+        '401': { description: Hay que iniciar sesión. }
+  /api/reservations/{bid}:
+    post:
+      tags: [Reservations]
+      summary: Anotarse en la lista de espera de un libro prestado
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Reserva creada; devuelve el lugar en la lista. }
+        '400': { description: El libro está disponible, ya lo tiene el lector o llegó al máximo de 3 reservas. }
+        '401': { description: Hay que iniciar sesión. }
+        '404': { description: Libro no encontrado. }
+        '409': { description: El lector ya está en la lista de ese libro. }
+    delete:
+      tags: [Reservations]
+      summary: Salir de la lista de espera de un libro
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Reserva cancelada. Si el libro estaba apartado para el lector, pasa al siguiente. }
+        '401': { description: Hay que iniciar sesión. }
+        '404': { description: El lector no tenía reserva de ese libro. }
+components:
+  schemas:
+    Reservation:
+      type: object
+      properties:
+        _id: { type: string }
+        position: { type: integer, description: Lugar en la lista (1 es el próximo). }
+        ready: { type: boolean, description: El libro ya está apartado para este lector. }
+        readyUntil: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        book: { $ref: '#/components/schemas/Book' }

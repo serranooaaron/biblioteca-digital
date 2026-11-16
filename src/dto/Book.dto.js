@@ -22,6 +22,9 @@ export default class BookDTO {
 
   static getPublicFrom(book) {
     const plain = typeof book.toObject === 'function' ? book.toObject() : book;
-    return { ...plain, cover: toPublicCover(plain.cover) };
+    // No se expone para quién está apartado: solo si lo está y hasta cuándo.
+    const { heldFor, heldUntil, ...rest } = plain;
+    const held = Boolean(heldFor && heldUntil && new Date(heldUntil) > new Date());
+    return { ...rest, cover: toPublicCover(plain.cover), held, heldUntil: held ? heldUntil : null };
   }
 }

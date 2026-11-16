@@ -1,4 +1,5 @@
-import { usersService } from "../services/index.js"
+import { booksService, reservationsService, usersService } from "../services/index.js"
+import { assignHold } from "../utils/reservations.js";
 import UserDTO from "../dto/User.dto.js";
 
 const UPDATABLE_FIELDS = ["first_name", "last_name", "role"];
@@ -52,6 +53,10 @@ const deleteUser = async (req, res) => {
         return res.status(409).send({ status: "error", error: "El usuario tiene libros prestados: registra la devolución antes de borrarlo" });
     }
     await usersService.delete(userId);
+    // Sus lugares en listas de espera se liberan; un libro apartado para él pasa al siguiente lector.
+    await reservationsService.deleteMany({ user: userId });
+    const held = await booksService.getAll({ heldFor: userId }).select("_id").lean();
+    for (const book of held) await assignHold(book._id);
     res.send({ status: "success", message: "User deleted" })
 }
 

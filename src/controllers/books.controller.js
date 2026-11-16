@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import BookDTO from '../dto/Book.dto.js';
-import { booksService, reviewsService } from '../services/index.js';
+import { booksService, reservationsService, reviewsService } from '../services/index.js';
 import { escapeRegex } from '../utils/index.js';
 
 const UPDATABLE_FIELDS = ['title', 'author', 'publishedYear'];
@@ -45,6 +45,7 @@ const deleteBook = async (req, res) => {
   if (!book.available) return res.status(409).send({ status: 'error', error: 'No se puede borrar un libro prestado' });
   await booksService.delete(req.params.bid);
   await reviewsService.deleteMany({ book: book._id });
+  await reservationsService.deleteMany({ book: book._id });
   res.send({ status: 'success', message: 'Book deleted' });
 };
 

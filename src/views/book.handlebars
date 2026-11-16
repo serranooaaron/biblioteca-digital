@@ -8,9 +8,7 @@
       <h1>{{book.title}}</h1>
       <p class="book-detail__author">{{book.author}}</p>
       {{> rating avg=book.ratingAvg count=book.ratingCount size="lg"}}
-      <p class="book-detail__status">
-        {{#if book.available}}<span class="badge badge--ok">Disponible</span>{{else}}<span class="badge badge--off">Prestado</span>{{/if}}
-      </p>
+      <div class="book-detail__status">{{#with book}}{{> bookActions}}{{/with}}</div>
     </div>
   </article>
 

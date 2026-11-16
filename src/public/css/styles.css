@@ -264,11 +264,24 @@ main { flex: 1; padding-bottom: 72px; }
 .loan__meta { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
 .loan__due { margin-top: 6px; }
 .loan--overdue { border-color: var(--danger); background: rgb(180 35 24 / 0.03); }
+.loan--ready { border-color: var(--ok); background: rgb(29 122 74 / 0.04); }
+.loan__info h3 a:hover { color: var(--accent); }
+.loan__actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* Estado del libro y sus acciones (pedir, reservar, salir de la lista). */
+.book-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.book-actions__note { flex-basis: 100%; color: var(--muted); font-size: 0.82rem; }
+.book-detail .book-actions { justify-content: flex-start; gap: 12px; }
+.book-detail .book-actions__note { font-size: 0.9rem; }
 
 .overdue-alert { display: block; padding: 10px 0; background: var(--danger); color: #fff; font-weight: 600; font-size: 0.92rem; }
 .overdue-alert:hover, .overdue-alert:active { background: var(--danger-dark); }
 .overdue-alert:focus-visible { outline: 3px solid #fff; outline-offset: -5px; }
 .overdue-alert .container { display: block; }
+.ready-alert { display: block; padding: 10px 0; background: var(--accent); color: #fff; font-weight: 600; font-size: 0.92rem; }
+.ready-alert:hover, .ready-alert:active { background: #174a3e; }
+.ready-alert:focus-visible { outline: 3px solid #fff; outline-offset: -5px; }
+.ready-alert .container { display: block; overflow-wrap: anywhere; }
 
 .table-wrap { position: relative; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
 .table { width: 100%; border-collapse: collapse; min-width: 560px; }
@@ -413,7 +426,9 @@ main { flex: 1; padding-bottom: 72px; }
   .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; }
   .auth__row { grid-template-columns: 1fr; }
   .loan { grid-template-columns: 60px minmax(0, 1fr); }
-  .loan .btn { grid-column: 1 / -1; }
+  .loan > .btn, .loan__actions { grid-column: 1 / -1; }
+  .loan__actions { flex-direction: row; flex-wrap: wrap; }
+  .loan__actions .btn { flex: 1; }
   .lend-form, .modal__row { grid-template-columns: 1fr; }
   .book-detail { grid-template-columns: 120px minmax(0, 1fr); align-items: center; }
   .reviews__layout { grid-template-columns: minmax(0, 1fr); }
