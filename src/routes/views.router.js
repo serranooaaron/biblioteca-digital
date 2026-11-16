@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { booksService, loansService, usersService } from '../services/index.js';
-import { getReviewsOf, hasBorrowed, toPublicReview } from '../controllers/reviews.controller.js';
+import { booksService, loansService, reviewsService, usersService } from '../services/index.js';
+import { getMyReview, getReviewsPage, hasBorrowed, toPublicReview } from '../controllers/reviews.controller.js';
 import { COMMENT_MAX } from '../dao/models/Review.js';
 import { requireAdmin, requireAuth } from '../middlewares/auth.js';
 import UserDTO from '../dto/User.dto.js';
@@ -77,18 +77,30 @@ router.get('/libros/:bid', asyncHandler(async (req, res, next) => {
   const book = await booksService.getBy({ _id: req.params.bid }).lean();
   if (!book) return next();
 
-  const reviews = (await getReviewsOf(book._id)).map((review) => toPublicReview(review, req.user?.id));
-  const myReview = reviews.find((review) => review.mine) || null;
+  const [{ reviews, page, totalPages, total }, byRating, mine] = await Promise.all([
+    getReviewsPage(book._id, { page: req.query.pagina }),
+    reviewsService.countByRating(book._id),
+    req.user ? getMyReview(book._id, req.user.id) : null,
+  ]);
+  const myReview = mine ? toPublicReview(mine, req.user.id) : null;
   const canReview = req.user ? Boolean(myReview) || (await hasBorrowed(req.user.id, book._id)) : false;
   const counts = [5, 4, 3, 2, 1].map((stars) => {
-    const count = reviews.filter((review) => review.rating === stars).length;
-    return { stars, count, percent: reviews.length ? Math.round((count / reviews.length) * 100) : 0 };
+    const count = byRating[stars] || 0;
+    return { stars, count, percent: total ? Math.round((count / total) * 100) : 0 };
   });
+  const pageLink = (number) => `/libros/${book._id}${number > 1 ? `?pagina=${number}` : ''}#reviews-title`;
 
   res.render('book', {
     title: book.title,
     book: BookDTO.getPublicFrom(book),
-    reviews,
+    reviews: reviews.map((review) => toPublicReview(review, req.user?.id)),
+    totalReviews: total,
+    pagination: totalPages > 1 ? {
+      page,
+      totalPages,
+      prev: page > 1 ? pageLink(page - 1) : null,
+      next: page < totalPages ? pageLink(page + 1) : null,
+    } : null,
     myReview,
     canReview,
     counts,

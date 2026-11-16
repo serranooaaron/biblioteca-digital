@@ -19,7 +19,7 @@
 
     <div class="reviews__layout">
       <aside class="reviews__summary">
-        {{#if reviews.length}}
+        {{#if totalReviews}}
           <p class="reviews__avg"><strong>{{score book.ratingAvg}}</strong> de 5</p>
           <ul class="bars" aria-label="Reseñas por puntaje">
             {{#each counts}}
@@ -84,6 +84,14 @@
             <p>Quien lo lea primero puede contar qué le pareció.</p>
           </div>
         {{/each}}
+
+        {{#if pagination}}
+          <nav class="pager" aria-label="Páginas de reseñas">
+            {{#if pagination.prev}}<a class="btn btn--sm" href="{{pagination.prev}}" rel="prev">← Más nuevas</a>{{else}}<span class="btn btn--sm" aria-disabled="true">← Más nuevas</span>{{/if}}
+            <span class="pager__status">Página {{pagination.page}} de {{pagination.totalPages}}</span>
+            {{#if pagination.next}}<a class="btn btn--sm" href="{{pagination.next}}" rel="next">Más viejas →</a>{{else}}<span class="btn btn--sm" aria-disabled="true">Más viejas →</span>{{/if}}
+          </nav>
+        {{/if}}
       </div>
     </div>
   </section>

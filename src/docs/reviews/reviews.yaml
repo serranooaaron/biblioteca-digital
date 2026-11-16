@@ -1,0 +1,74 @@
+paths:
+  /api/books/{bid}/reviews:
+    get:
+      tags: [Reviews]
+      summary: Listar las reseñas de un libro, de la más nueva a la más vieja
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: limit, description: Reseñas por página (máximo 50)., schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+      responses:
+        '200':
+          description: Página de reseñas con el promedio del libro.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewsPage' }
+        '404': { description: Libro no encontrado. }
+    put:
+      tags: [Reviews]
+      summary: Crear o editar la reseña propia (solo quien tuvo el libro prestado)
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewInput' }
+      responses:
+        '200': { description: Reseña guardada; devuelve la reseña y el nuevo promedio. }
+        '400': { description: Puntaje fuera de 1 a 5 o comentario de más de 600 caracteres. }
+        '401': { description: Hay que iniciar sesión. }
+        '403': { description: El lector nunca tuvo el libro prestado. }
+        '404': { description: Libro no encontrado. }
+  /api/books/{bid}/reviews/{rid}:
+    delete:
+      tags: [Reviews]
+      summary: Borrar una reseña (su autor o un administrador)
+      parameters:
+        - { in: path, name: bid, required: true, schema: { type: string } }
+        - { in: path, name: rid, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Reseña borrada; devuelve el nuevo promedio. }
+        '401': { description: Hay que iniciar sesión. }
+        '403': { description: La reseña es de otro lector. }
+        '404': { description: Reseña no encontrada. }
+components:
+  schemas:
+    ReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, maxLength: 600 }
+    Review:
+      type: object
+      properties:
+        _id: { type: string }
+        rating: { type: integer }
+        comment: { type: string }
+        author: { type: string, description: 'Nombre y la inicial del apellido ("Ana G."); nunca el email.' }
+        mine: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    ReviewsPage:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        payload:
+          type: object
+          properties:
+            ratingAvg: { type: number, example: 4.3 }
+            ratingCount: { type: integer }
+            reviews: { type: array, items: { $ref: '#/components/schemas/Review' } }
+            page: { type: integer }
+            totalPages: { type: integer }
+            total: { type: integer }

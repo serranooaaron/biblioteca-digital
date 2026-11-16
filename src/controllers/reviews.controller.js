@@ -24,8 +24,33 @@ export const toPublicReview = (review, viewerId) => {
 export const hasBorrowed = async (userId, bookId) =>
   Boolean(await loansService.getBy({ user: userId, book: bookId }).select('_id').lean());
 
-export const getReviewsOf = (bookId) =>
-  reviewsService.getAll({ book: bookId }).sort({ createdAt: -1 }).populate('user', 'first_name last_name').lean();
+export const REVIEWS_PER_PAGE = 10;
+const MAX_REVIEWS_PER_PAGE = 50;
+
+const toPositiveInt = (value, fallback, max = Infinity) => {
+  const number = Number.parseInt(value, 10);
+  return Number.isInteger(number) && number > 0 ? Math.min(number, max) : fallback;
+};
+
+// Una página de reseñas, de la más nueva a la más vieja. Nunca se traen todas de una vez.
+export const getReviewsPage = async (bookId, { page, limit } = {}) => {
+  const perPage = toPositiveInt(limit, REVIEWS_PER_PAGE, MAX_REVIEWS_PER_PAGE);
+  const total = await reviewsService.count({ book: bookId });
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const current = toPositiveInt(page, 1, totalPages);
+  const reviews = await reviewsService
+    .getAll({ book: bookId })
+    .sort({ createdAt: -1, _id: -1 })
+    .skip((current - 1) * perPage)
+    .limit(perPage)
+    .populate('user', 'first_name last_name')
+    .lean();
+  return { reviews, page: current, totalPages, total };
+};
+
+// La reseña del lector logueado, aunque no caiga en la página que se está viendo.
+export const getMyReview = (bookId, userId) =>
+  reviewsService.getBy({ book: bookId, user: userId }).lean();
 
 const refreshBookRating = async (bookId) => {
   const summary = await reviewsService.summary(bookId);
@@ -38,13 +63,17 @@ const findBook = (bid) => (mongoose.isValidObjectId(bid) ? booksService.getBy({ 
 const getBookReviews = async (req, res) => {
   const book = await findBook(req.params.bid);
   if (!book) return res.status(404).send({ status: 'error', error: 'Book not found' });
-  const reviews = await getReviewsOf(book._id);
+  // ?page= y ?limit= (hasta 50 por página).
+  const { reviews, page, totalPages, total } = await getReviewsPage(book._id, req.query);
   res.send({
     status: 'success',
     payload: {
       ratingAvg: book.ratingAvg,
       ratingCount: book.ratingCount,
       reviews: reviews.map((review) => toPublicReview(review, req.user?.id)),
+      page,
+      totalPages,
+      total,
     },
   });
 };
@@ -66,7 +95,9 @@ const saveMyReview = async (req, res) => {
     return res.status(403).send({ status: 'error', error: 'Solo puedes reseñar libros que pediste prestados' });
   }
 
-  const review = await reviewsService.upsert(book._id, req.user.id, { rating, comment });
+  // Dos envíos simultáneos del mismo lector chocan en el índice único: el segundo reintenta como edición.
+  const save = () => reviewsService.upsert(book._id, req.user.id, { rating, comment });
+  const review = await save().catch((error) => (error.code === 11000 ? save() : Promise.reject(error)));
   const summary = await refreshBookRating(book._id);
   res.send({
     status: 'success',

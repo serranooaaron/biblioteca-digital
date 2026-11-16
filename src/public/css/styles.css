@@ -380,6 +380,10 @@ main { flex: 1; padding-bottom: 72px; }
 .review__head .stars { margin-left: auto; }
 .review__comment { margin-top: 10px; white-space: pre-line; overflow-wrap: anywhere; }
 .review__remove { margin-top: 8px; color: var(--danger); }
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.pager__status { color: var(--muted); font-size: 0.88rem; }
+.pager [aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn[aria-busy="true"] { cursor: progress; }
 .avatar-chip--sm { width: 34px; height: 34px; font-size: 0.8rem; cursor: default; flex-shrink: 0; }
 .btn--danger:hover { background: rgb(180 35 24 / 0.1); border-color: var(--danger); }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

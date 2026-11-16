@@ -17,6 +17,17 @@ export default class Reviews {
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
 
+  count = (params) => reviewModel.countDocuments(params);
+
+  // Cantidad de reseñas de un libro por puntaje: { 5: 3, 4: 1, ... }.
+  countByRating = async (book) => {
+    const rows = await reviewModel.aggregate([
+      { $match: { book: new mongoose.Types.ObjectId(String(book)) } },
+      { $group: { _id: '$rating', count: { $sum: 1 } } },
+    ]);
+    return Object.fromEntries(rows.map((row) => [row._id, row.count]));
+  };
+
   // Promedio y cantidad de reseñas de un libro.
   summary = async (book) => {
     const [result] = await reviewModel.aggregate([

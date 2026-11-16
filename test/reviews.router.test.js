@@ -164,4 +164,68 @@ describe('Reseñas de libros', function () {
 
     expect(await mongoose.connection.collection('reviews').countDocuments()).to.equal(0);
   });
+
+  describe('Paginación', function () {
+    // 23 reseñas de lectores distintos, la n.º 22 es la más nueva; puntajes 5,4,3,2,1 repetidos.
+    const seedReviews = async (book) => {
+      const now = Date.now();
+      await mongoose.connection.collection('reviews').insertMany(
+        Array.from({ length: 23 }, (_, i) => ({
+          book: book._id,
+          user: new mongoose.Types.ObjectId(),
+          rating: 5 - (i % 5),
+          comment: `Reseña ${i}`,
+          createdAt: new Date(now - (22 - i) * 60000),
+          updatedAt: new Date(now - (22 - i) * 60000),
+        }))
+      );
+    };
+
+    it('la API devuelve 10 reseñas por página, como máximo 50, de la más nueva a la más vieja', async function () {
+      const book = await createBook();
+      await seedReviews(book);
+
+      const first = await requester.get(`/api/books/${book._id}/reviews`);
+      const third = await requester.get(`/api/books/${book._id}/reviews`).query({ page: 3 });
+      const huge = await requester.get(`/api/books/${book._id}/reviews`).query({ limit: 1000 });
+      const beyond = await requester.get(`/api/books/${book._id}/reviews`).query({ page: 99 });
+
+      expect(first.body.payload.reviews).to.have.length(10);
+      expect(first.body.payload.reviews[0].comment).to.equal('Reseña 22');
+      expect(first.body.payload).to.include({ page: 1, totalPages: 3, total: 23 });
+      expect(third.body.payload.reviews.map((review) => review.comment)).to.deep.equal(['Reseña 2', 'Reseña 1', 'Reseña 0']);
+      expect(huge.body.payload.reviews).to.have.length(23);
+      expect(beyond.body.payload.page).to.equal(3);
+    });
+
+    it('la página del libro muestra 10 reseñas, la navegación y el reparto de todas', async function () {
+      const book = await createBook();
+      await seedReviews(book);
+
+      const first = await requester.get(`/libros/${book._id}`);
+      const second = await requester.get(`/libros/${book._id}`).query({ pagina: 2 });
+
+      expect(first.text.match(/data-review="/g)).to.have.length(10);
+      expect(first.text).to.include('Página 1 de 3');
+      // Handlebars escapa "=" como &#x3D; dentro del atributo; el navegador lo lee igual.
+      expect(first.text).to.match(new RegExp(`href="/libros/${book._id}\\?pagina(=|&#x3D;)2#reviews-title"`));
+      expect(second.text).to.include('Reseña 12');
+      expect(second.text).to.not.include('Reseña 22');
+      // Reparto sobre las 23, no solo sobre las 10 de la página: 5 de cinco estrellas.
+      expect(first.text).to.match(/bars__count">5<span class="sr-only"> reseñas de 5 estrellas/);
+    });
+
+    it('el formulario trae la reseña propia aunque no esté en la página que se ve', async function () {
+      const book = await createBook();
+      const reader = await readerOf(book);
+      await requester.put(`/api/books/${book._id}/reviews`).set('Cookie', reader.cookie).send({ rating: 2, comment: 'Mi opinión vieja' });
+      await mongoose.connection.collection('reviews').updateOne({ comment: 'Mi opinión vieja' }, { $set: { createdAt: new Date(0) } });
+      await seedReviews(book);
+
+      const page = await requester.get(`/libros/${book._id}`).set('Cookie', reader.cookie);
+
+      expect(page.text).to.include('Guardar cambios');
+      expect(page.text).to.include('>Mi opinión vieja</textarea>');
+    });
+  });
 });

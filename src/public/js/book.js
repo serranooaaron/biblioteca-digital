@@ -4,6 +4,19 @@ const bookId = document.querySelector('[data-book]')?.dataset.book;
 const form = document.querySelector('[data-review-form]');
 const errorBox = document.querySelector('[data-review-error]');
 
+// Deshabilita el botón y muestra qué está pasando; devuelve la función que lo restaura.
+const busy = (button, label) => {
+  const original = button.textContent;
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  button.textContent = label;
+  return () => {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    button.textContent = original;
+  };
+};
+
 // Contador de caracteres del comentario.
 const comment = form?.querySelector('#comment');
 const counter = form?.querySelector('[data-counter]');
@@ -24,13 +37,13 @@ form?.addEventListener('submit', async (event) => {
     return;
   }
   const button = form.querySelector('button[type="submit"]');
-  button.disabled = true;
+  const done = busy(button, 'Guardando…');
   try {
     await api(`/api/books/${bookId}/reviews`, { method: 'PUT', body: { rating: Number(rating), comment: comment.value } });
     reloadWith('¡Gracias! Tu reseña quedó publicada.');
   } catch (error) {
     errorBox.textContent = error.message;
-    button.disabled = false;
+    done();
   }
 });
 
@@ -39,12 +52,12 @@ document.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-delete-review]');
   if (!button) return;
   if (!confirm('¿Borrar esta reseña? No se puede deshacer.')) return;
-  button.disabled = true;
+  const done = busy(button, 'Borrando…');
   try {
     await api(`/api/books/${bookId}/reviews/${button.dataset.deleteReview}`, { method: 'DELETE' });
     reloadWith('Reseña borrada.');
   } catch (error) {
     toast(error.message, { type: 'error' });
-    button.disabled = false;
+    done();
   }
 });
