@@ -1,4 +1,4 @@
-import { api, reloadWith, toast } from './app.js';
+import { api, confirmDialog, reloadWith, toast } from './app.js';
 
 // Botones "Pedir", "Reservar" y "Salir de la lista" de cualquier página (catálogo, libro, mis préstamos).
 // Cada bloque [data-book-actions] lleva el id y el título del libro.
@@ -29,7 +29,7 @@ document.addEventListener('click', async (event) => {
     const button = event.target.closest(action.selector);
     if (!button) continue;
     const { bookId, bookTitle } = button.closest('[data-book-actions]').dataset;
-    if (action.confirm && !confirm(action.confirm(bookTitle))) return;
+    if (action.confirm && !(await confirmDialog(action.confirm(bookTitle), { confirmLabel: 'Salir de la lista', danger: true }))) return;
 
     const label = button.textContent;
     button.disabled = true;

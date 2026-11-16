@@ -1,4 +1,4 @@
-import { api, reloadWith, toast } from './app.js';
+import { confirmDialog, api, reloadWith, toast } from './app.js';
 
 const failWith = (button) => (error) => {
   toast(error.message, { type: 'error' });
@@ -59,7 +59,7 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-document.querySelector('[data-books-table]')?.addEventListener('click', (event) => {
+document.querySelector('[data-books-table]')?.addEventListener('click', async (event) => {
   const row = event.target.closest('[data-book]');
   if (!row) return;
   const book = JSON.parse(row.dataset.book);
@@ -67,7 +67,7 @@ document.querySelector('[data-books-table]')?.addEventListener('click', (event) 
   if (event.target.closest('[data-edit-book]')) return openBookForm(book);
 
   const del = event.target.closest('[data-delete-book]');
-  if (del && confirm(`¿Borrar “${book.title}” del catálogo?`)) {
+  if (del && (await confirmDialog(`¿Borrar “${book.title}” del catálogo? No se puede deshacer.`, { confirmLabel: 'Borrar', danger: true }))) {
     del.disabled = true;
     api(`/api/books/${book._id}`, { method: 'DELETE' }).then(() => reloadWith('Libro borrado'), failWith(del));
   }
@@ -84,11 +84,11 @@ document.querySelector('[data-lend-form]')?.addEventListener('submit', (event) =
   api(`/api/loans/${uid}/${bid}`, { method: 'POST' }).then(() => reloadWith('Préstamo registrado'), failWith(submit));
 });
 
-document.querySelector('[data-loans-table]')?.addEventListener('click', (event) => {
+document.querySelector('[data-loans-table]')?.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-return-loan]');
   if (!button) return;
   const row = button.closest('[data-loan]');
-  if (!confirm('¿Registrar la devolución de este libro?')) return;
+  if (!(await confirmDialog('¿Registrar la devolución de este libro?', { confirmLabel: 'Registrar devolución' }))) return;
   button.disabled = true;
   api(`/api/loans/${row.dataset.loan}/return`, { method: 'PUT' }).then(() => reloadWith('Devolución registrada'), failWith(button));
 });
@@ -115,11 +115,11 @@ usersTable?.addEventListener('change', (event) => {
     });
 });
 
-usersTable?.addEventListener('click', (event) => {
+usersTable?.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-delete-user]');
   if (!button) return;
   const row = button.closest('[data-user]');
-  if (!confirm(`¿Borrar la cuenta de ${row.dataset.userName}?`)) return;
+  if (!(await confirmDialog(`¿Borrar la cuenta de ${row.dataset.userName}? No se puede deshacer.`, { confirmLabel: 'Borrar cuenta', danger: true }))) return;
   button.disabled = true;
   api(`/api/users/${row.dataset.user}`, { method: 'DELETE' }).then(() => reloadWith('Usuario borrado'), failWith(button));
 });

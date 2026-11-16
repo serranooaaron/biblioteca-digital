@@ -16,7 +16,10 @@
   --star-off: #948670;
   --danger: #b42318;
   --danger-dark: #912018;
-  --ok: #1d7a4a;
+  --ok: #17653d;
+  /* Bordes de campos de formulario: 3:1 contra el fondo (WCAG 1.4.11). */
+  --border-strong: #8a8070;
+  --focus: #0b57d0;
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 1px 2px rgb(31 36 48 / 0.06), 0 10px 30px rgb(31 36 48 / 0.08);
@@ -49,6 +52,20 @@ p { margin: 0; }
 main { flex: 1; padding-bottom: 72px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; font-size: 0.75rem; }
+
+/* ===================== Accesibilidad ===================== */
+/* Foco visible y parejo para quien navega con teclado. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.btn:focus-visible, .input:focus-visible, .field input:focus-visible, .field select:focus-visible { border-radius: var(--radius-sm); }
+/* Primer elemento de la página: aparece al enfocarlo con Tab y lleva directo al contenido. */
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: #fff; font-weight: 600; transition: top 0.15s; }
+.skip-link:focus { top: 12px; }
+#contenido:focus { outline: none; }
+/* Los enlaces a una sección no quedan tapados por el encabezado fijo. */
+[id] { scroll-margin-top: 88px; }
+::selection { background: var(--accent); color: #fff; }
+input, select, textarea { accent-color: var(--accent); }
+h1, h2 { text-wrap: balance; }
 
 /* ===================== Botones ===================== */
 .btn {
@@ -142,7 +159,7 @@ main { flex: 1; padding-bottom: 72px; }
   color: #fff;
   background:
     linear-gradient(90deg, rgb(0 0 0 / 0.18) 0 6%, transparent 6% 8%, rgb(255 255 255 / 0.08) 8% 9%, transparent 9%),
-    linear-gradient(160deg, hsl(var(--hue) 45% 38%), hsl(calc(var(--hue) + 30) 50% 24%));
+    linear-gradient(160deg, hsl(var(--hue) 45% 30%), hsl(calc(var(--hue) + 30) 50% 20%));
 }
 .cover__title { font-family: var(--serif); font-weight: 700; font-size: clamp(0.95rem, 1.5vw, 1.25rem); line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
 .hero__book .cover__title { font-size: clamp(0.72rem, 0.9vw, 0.88rem); }
@@ -185,12 +202,13 @@ main { flex: 1; padding-bottom: 72px; }
   width: 100%;
   padding: 11px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
 }
-.input:focus, .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input:focus, .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input[aria-invalid="true"], .field input[aria-invalid="true"] { border-color: var(--danger); }
 .field__hint { color: var(--muted); font-size: 0.8rem; }
 .form-error { color: var(--danger); font-size: 0.9rem; min-height: 1.2em; }
 
@@ -203,7 +221,7 @@ main { flex: 1; padding-bottom: 72px; }
 .empty-state .btn { margin-top: 18px; }
 
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-2); color: var(--muted); }
-.badge--ok { background: rgb(29 122 74 / 0.1); color: var(--ok); }
+.badge--ok { background: rgb(23 101 61 / 0.1); color: var(--ok); }
 .badge--off { background: rgb(183 121 31 / 0.14); color: var(--gold-ink); }
 .badge--danger { background: rgb(180 35 24 / 0.1); color: var(--danger); }
 
@@ -331,6 +349,10 @@ main { flex: 1; padding-bottom: 72px; }
 .modal__head h2 { font-size: 1.5rem; }
 .modal__row { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 12px; }
 .modal__foot { display: flex; justify-content: flex-end; gap: 10px; }
+.confirm { width: min(420px, calc(100vw - 32px)); padding: 22px; }
+.confirm__message { font-size: 1.05rem; margin-bottom: 20px; overflow-wrap: anywhere; }
+.confirm .modal__foot { flex-wrap: wrap; }
+.confirm[open] { animation: toast-in 0.2s ease; }
 
 /* ===================== Login y registro ===================== */
 .auth { display: grid; place-items: center; padding-top: clamp(32px, 6vw, 72px); }
@@ -399,7 +421,6 @@ main { flex: 1; padding-bottom: 72px; }
 .btn[aria-busy="true"] { cursor: progress; }
 .avatar-chip--sm { width: 34px; height: 34px; font-size: 0.8rem; cursor: default; flex-shrink: 0; }
 .btn--danger:hover { background: rgb(180 35 24 / 0.1); border-color: var(--danger); }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
 /* ===================== Responsive ===================== */

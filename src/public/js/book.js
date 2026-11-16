@@ -1,4 +1,4 @@
-import { api, reloadWith, toast } from './app.js';
+import { api, confirmDialog, reloadWith, toast } from './app.js';
 import './bookActions.js';
 
 const bookId = document.querySelector('[data-book]')?.dataset.book;
@@ -52,7 +52,7 @@ form?.addEventListener('submit', async (event) => {
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-delete-review]');
   if (!button) return;
-  if (!confirm('¿Borrar esta reseña? No se puede deshacer.')) return;
+  if (!(await confirmDialog('¿Borrar esta reseña? No se puede deshacer.', { confirmLabel: 'Borrar', danger: true }))) return;
   const done = busy(button, 'Borrando…');
   try {
     await api(`/api/books/${bookId}/reviews/${button.dataset.deleteReview}`, { method: 'DELETE' });

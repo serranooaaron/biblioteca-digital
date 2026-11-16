@@ -1,4 +1,4 @@
-import { api, reloadWith, toast } from './app.js';
+import { api, confirmDialog, reloadWith, toast } from './app.js';
 
 // "Devolver": registra la devolución y recarga para pasar el libro al historial.
 document.querySelector('[data-active-list]')?.addEventListener('click', async (event) => {
@@ -6,7 +6,7 @@ document.querySelector('[data-active-list]')?.addEventListener('click', async (e
   if (!button) return;
   const loan = button.closest('[data-loan]');
   const title = loan.querySelector('h3').textContent;
-  if (!confirm(`¿Devolver “${title}”?`)) return;
+  if (!(await confirmDialog(`¿Devolver “${title}”?`, { confirmLabel: 'Devolver' }))) return;
 
   button.disabled = true;
   try {
