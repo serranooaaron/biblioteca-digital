@@ -3,7 +3,10 @@ import { usersService } from '../../src/services/index.js';
 import { createHash } from '../../src/utils/index.js';
 
 // Contraseñas generadas en cada corrida: en el código no queda ninguna fija.
-export const randomPassword = () => crypto.randomBytes(12).toString('hex');
+// Cumplen la regla (mayúscula, minúscula, número y símbolo) y usan un alfabeto sin vocales
+// ni números que se lean como letras: nunca forman por casualidad una palabra débil o un nombre.
+const ALPHABET = 'ghjkmnpqrvwxyz2689';
+export const randomPassword = () => `Kq9#${Array.from(crypto.randomBytes(16), (byte) => ALPHABET[byte % ALPHABET.length]).join('')}`;
 
 let counter = 0;
 

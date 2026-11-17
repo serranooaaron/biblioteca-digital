@@ -2,8 +2,7 @@ import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import { COOKIE_NAME, cookieOptions, signToken } from "../utils/auth.js";
 import { loginLimiter, registerLimiter, waitMessage } from "../utils/loginLimiter.js";
-
-const MIN_PASSWORD_LENGTH = 8;
+import { passwordProblem } from "../public/js/passwordPolicy.js";
 
 const register = async (req, res) => {
     const wait = registerLimiter.retryAfter(req);
@@ -14,9 +13,9 @@ const register = async (req, res) => {
 
     const { first_name, last_name, email, password } = req.body;
     if (!first_name || !last_name || !email || !password) return res.status(400).send({ status: "error", error: "Incomplete values" });
-    if (String(password).length < MIN_PASSWORD_LENGTH) {
-        return res.status(400).send({ status: "error", error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres` });
-    }
+    // La misma regla que muestra el formulario: el servidor es el que decide.
+    const problem = passwordProblem(String(password), { email, first_name, last_name });
+    if (problem) return res.status(400).send({ status: "error", error: problem });
     const normalizedEmail = String(email).toLowerCase().trim();
     const exists = await usersService.getUserByEmail(normalizedEmail);
     if (exists) return res.status(409).send({ status: "error", error: "User already exists" });

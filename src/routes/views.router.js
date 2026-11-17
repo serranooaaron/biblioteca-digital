@@ -9,6 +9,7 @@ import BookDTO from '../dto/Book.dto.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
 import { LOAN_DAYS, loanStatus } from '../utils/loans.js';
+import { passwordChecks } from '../public/js/passwordPolicy.js';
 import { HOLD_DAYS, MAX_RESERVATIONS, bookState, isHeldFor, releaseExpiredHolds, reservationsOf } from '../utils/reservations.js';
 
 const router = Router();
@@ -215,7 +216,8 @@ const safeNext = (value) =>
 const authPage = (view, title) => (req, res) => {
   const next = safeNext(req.query.next);
   if (req.user) return res.redirect(next);
-  return res.render(view, { title, next });
+  // El registro muestra la lista de requisitos de la contraseña desde el primer momento.
+  return res.render(view, { title, next, passwordRules: passwordChecks('').map(({ id, label }) => ({ id, label })) });
 };
 
 router.get('/login', authPage('login', 'Ingresar'));

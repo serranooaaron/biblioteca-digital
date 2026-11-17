@@ -34,6 +34,38 @@ describe('Digital Library API', function () {
 
   const reader = { first_name: 'Test', last_name: 'User', email: 'reader@example.com', password: randomPassword() };
 
+  describe('regla de contraseñas', function () {
+    const register = (password, extra = {}) =>
+      requester.post('/api/sessions/register').send({ ...reader, email: `regla${Math.random()}@example.com`, password, ...extra });
+
+    it('acepta una contraseña con mayúscula, minúscula, número y símbolo', async function () {
+      expect((await register('Lectura#Lenta47')).status).to.equal(201);
+    });
+
+    it('exige cada requisito y dice qué falta', async function () {
+      const cases = {
+        'Ab1#xyz': 'al menos 10 caracteres',
+        'LECTURA#LENTA47': 'una letra minúscula',
+        'lectura#lenta47': 'una letra mayúscula',
+        'Lectura#Lenta': 'un número',
+        'LecturaLenta47': 'un símbolo',
+      };
+      for (const [password, missing] of Object.entries(cases)) {
+        const response = await register(password);
+        expect(response.status, password).to.equal(400);
+        expect(response.body.error, password).to.include(missing);
+      }
+    });
+
+    it('rechaza contraseñas comunes, secuencias y las que contienen el nombre o el email', async function () {
+      for (const password of ['P@ssw0rd2024!', 'Biblioteca#2026', 'Ab#9123456zz']) {
+        expect((await register(password)).status, password).to.equal(400);
+      }
+      expect((await register('Marcela#Kq92', { first_name: 'Marcela' })).status).to.equal(400);
+      expect((await register('Kq92#Jperez88', { email: 'jperez@example.com' })).status).to.equal(400);
+    });
+  });
+
   it('registers a library user and starts the session', async function () {
     const response = await requester.post('/api/sessions/register').send(reader);
     expect(response.status).to.equal(201);
@@ -42,7 +74,7 @@ describe('Digital Library API', function () {
   });
 
   it('rejects short passwords and duplicated emails', async function () {
-    const short = await requester.post('/api/sessions/register').send({ ...reader, password: 'a'.repeat(7) });
+    const short = await requester.post('/api/sessions/register').send({ ...reader, password: randomPassword().slice(0, 8) });
     await requester.post('/api/sessions/register').send(reader);
     const duplicated = await requester.post('/api/sessions/register').send({ ...reader, email: 'READER@example.com' });
     expect(short.status).to.equal(400);

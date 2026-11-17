@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { seedBooks, seedUser } from '../src/data/seeders.js';
 import { dbOptions } from '../src/utils/db.js';
+import { passwordProblem } from '../src/public/js/passwordPolicy.js';
 
 // El .env se busca en la raíz del proyecto, sin importar desde qué carpeta se corra el script.
 const envPath = fileURLToPath(new URL('../.env', import.meta.url));
@@ -25,6 +26,12 @@ try {
   console.log(`Base: ${mongoose.connection.name}`);
   const result = await seedBooks();
   console.log(`Libros insertados: ${result.upsertedCount}`);
+
+  // El administrador cumple la misma regla que cualquier cuenta.
+  const adminProblem = process.env.ADMIN_PASSWORD
+    ? passwordProblem(process.env.ADMIN_PASSWORD, { email: process.env.ADMIN_EMAIL, first_name: 'Admin', last_name: 'Biblioteca' })
+    : null;
+  if (adminProblem) throw new Error(`ADMIN_PASSWORD no es segura: ${adminProblem}. No se creó el administrador`);
 
   const admin = await seedUser({
     email: process.env.ADMIN_EMAIL,
