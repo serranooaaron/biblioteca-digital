@@ -2,11 +2,13 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { seedBooks, seedUser } from '../src/data/seeders.js';
+import { dbOptions } from '../src/utils/db.js';
 
 dotenv.config({ quiet: true });
 
 try {
-  await mongoose.connect(process.env.MONGO_URL);
+  await mongoose.connect(process.env.MONGO_URL, dbOptions());
+  console.log(`Base: ${mongoose.connection.name}`);
   const result = await seedBooks();
   console.log(`Libros insertados: ${result.upsertedCount}`);
 

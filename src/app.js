@@ -18,6 +18,7 @@ import helpers from './utils/handlebars.js';
 import { attachUser } from './middlewares/auth.js';
 import securityHeaders from './middlewares/securityHeaders.js';
 import { getJwtSecret } from './utils/auth.js';
+import { dbOptions } from './utils/db.js';
 import __dirname from './utils/index.js';
 
 dotenv.config({ quiet: true });
@@ -105,7 +106,7 @@ app.use((err, req, res, next) => {
 
 if (!isTest) {
   getJwtSecret(); // Falla al arrancar si falta JWT_SECRET, en lugar de fallar en el primer login.
-  mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/biblioteca_digital');
+  mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017', dbOptions());
   const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
   // Apagado ordenado: en un contenedor, Node ignora estas señales si nadie las atiende

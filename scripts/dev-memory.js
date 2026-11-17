@@ -21,7 +21,7 @@ const DEMO_LOANS = [
 ];
 
 const mongod = await MongoMemoryServer.create();
-process.env.MONGO_URL = mongod.getUri('biblioteca');
+process.env.MONGO_URL = mongod.getUri();
 process.env.JWT_SECRET ||= crypto.randomBytes(32).toString('hex');
 
 // Reseñas de ejemplo de libros que el lector ya devolvió.
@@ -31,7 +31,8 @@ const DEMO_REVIEWS = [
 ];
 
 const { seedBooks, seedLoan, seedReservation, seedReview, seedUser } = await import('../src/data/seeders.js');
-await mongoose.connect(process.env.MONGO_URL);
+const { dbOptions } = await import('../src/utils/db.js');
+await mongoose.connect(process.env.MONGO_URL, dbOptions());
 await seedBooks();
 const [admin, reader] = await Promise.all(DEV_ACCOUNTS.map(seedUser));
 for (const loan of DEMO_LOANS) await seedLoan({ user: reader, ...loan });

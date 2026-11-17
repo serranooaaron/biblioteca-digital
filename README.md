@@ -76,7 +76,8 @@ La app queda en http://localhost:8081 y la documentación de la API en http://lo
 
 | Variable | Descripción |
 |---|---|
-| `MONGO_URL` | Cadena de conexión de MongoDB (usa una base propia, ej. `/biblioteca-digital`) |
+| `MONGO_URL` | Cadena de conexión de MongoDB; puede ser la que copia Atlas, sin nombre de base |
+| `DB_NAME` | Opcional: nombre de la base (por defecto `biblioteca-digital`). Así varias apps pueden compartir el mismo clúster sin mezclar datos |
 | `JWT_SECRET` | Clave larga y aleatoria para firmar los tokens (obligatoria) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Opcional: cuenta administradora que crea `npm run seed` |
 | `PORT` | Puerto (por defecto 8081) |
@@ -103,9 +104,10 @@ docker run --rm -p 8081:8081 --env-file .env biblioteca-digital
 
 El repo trae un [`render.yaml`](render.yaml): en Render, **New > Blueprint** y elegir este repositorio.
 
-1. En MongoDB Atlas, crear un usuario con rol `readWrite` solo sobre la base de esta app y copiar la cadena `mongodb+srv://`.
-2. En Render, cargar ``MONGO_URL`` con esa cadena (el resto de las variables las define el Blueprint; `JWT_SECRET` se genera solo).
-3. Render usa `/api/health` para saber cuándo la versión nueva está lista.
+1. En MongoDB Atlas, crear un usuario con rol `readWrite` solo sobre la base `biblioteca-digital` y copiar la cadena `mongodb+srv://`.
+2. Varias apps pueden usar el mismo clúster: cada una guarda en su propia base (`biblioteca-digital` en esta).
+3. En Render, cargar `MONGO_URL` con esa cadena (el resto de las variables las define el Blueprint; `JWT_SECRET` se genera solo).
+4. Render usa `/api/health` para saber cuándo la versión nueva está lista.
 
 A tener en cuenta:
 - En el plan gratuito el servicio se duerme tras 15 minutos sin visitas: la primera carga tarda unos segundos.
