@@ -1,5 +1,7 @@
 # Biblioteca Digital
 
+[![Tests](https://github.com/serranooaaron/biblioteca-digital/actions/workflows/tests.yml/badge.svg)](https://github.com/serranooaaron/biblioteca-digital/actions/workflows/tests.yml)
+
 Aplicación web para una biblioteca: catálogo de libros, cuentas de lectores, préstamos, reservas y reseñas, con un panel para administrar todo.
 
 Parte de la entrega final de Programación Backend III (Coderhouse, comisión 86245; el primer commit de este repo es esa entrega) y le suma interfaz web, roles y correcciones de seguridad.
