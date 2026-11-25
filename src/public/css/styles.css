@@ -371,7 +371,7 @@ h1, h2 { text-wrap: balance; }
 .auth__switch a { color: var(--accent); font-weight: 600; }
 .auth__switch--tight { margin-top: 14px; }
 .auth__actions { margin-top: 18px; }
-.auth__actions[hidden] { display: none; }
+.auth__actions[hidden], .auth__form[hidden] { display: none; }
 
 /* Avisos de "olvidé mi contraseña": confirmación y link vencido */
 .notice { margin: 0; padding: 12px 14px; border-radius: 12px; font-size: 0.95rem; border: 1px solid var(--border-strong); background: var(--paper); }
