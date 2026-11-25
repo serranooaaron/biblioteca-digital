@@ -5,6 +5,75 @@ Para instalar y ejecutar el proyecto, ver el [README](../README.md). Para ramas 
 
 ---
 
+## Recuperar la contraseña por email (25/11/2026)
+
+### Qué se agregó
+
+| Pieza | Archivo | Para qué |
+|---|---|---|
+| Colección `PasswordResets` | `src/dao/models/PasswordReset.js` | Pedidos pendientes: usuario, **hash** del token y vencimiento (MongoDB borra los vencidos) |
+| `sendResetEmail`, `findValidReset`, `consumeReset`, `clearResets` | `src/utils/passwordReset.js` | Token de un solo uso que vence a los 30 minutos y email con el link |
+| `mailer.send`, `appUrl`, `escapeHtml` | `src/utils/mailer.js` | Envío con la API de Brevo (con `fetch`, sin SDK); el dominio del link sale de `APP_URL` |
+| `POST /api/sessions/forgot` y `POST /api/sessions/reset` | `src/controllers/sessions.controller.js` | Pedir el link y crear la contraseña nueva |
+| `forgotLimiter` | mismo archivo | 3 pedidos por email y conexión, y 10 por conexión, cada hora |
+| Páginas `/recuperar` y `/restablecer` | `forgot.handlebars`, `reset.handlebars`, `src/public/js/recover.js` | Formularios, y el link "¿Olvidaste tu contraseña?" en el login |
+| Variables nuevas | `.env.example` | `APP_URL`, `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME` |
+
+### Cómo funciona
+
+1. **El pedido.** En `/recuperar` se escribe el email.
+   - El servidor valida el formato y cuenta el pedido en el límite, exista o no la cuenta.
+   - **Responde siempre el mismo mensaje.**
+   - Si la cuenta existe, el email se envía **después de responder** (sin `await`): ni el texto ni la demora revelan qué emails están registrados.
+2. **El token.** `sendResetEmail` borra los pedidos anteriores de esa cuenta y genera 32 bytes aleatorios en `base64url`. En la base guarda **solo el SHA-256**, con vencimiento a los 30 minutos (índice TTL).
+3. **El email.** El link es `${APP_URL}/restablecer?token=…`. En producción `APP_URL` es obligatoria: si falta, no se envía nada y se registra el error. El nombre de la cuenta se escapa en el HTML del email.
+4. **El formulario.** `/restablecer` busca el pedido vigente por el hash del token.
+   - Si existe, muestra el formulario con la lista de requisitos de la contraseña; si no, "El link venció o ya se usó" y un botón para pedir otro.
+   - La página responde con `Referrer-Policy: no-referrer`, para que el token no viaje a otro sitio.
+5. **La contraseña nueva.** `POST /api/sessions/reset`:
+   - aplica la regla del registro;
+   - recién con todo validado, **consume** el token con `findOneAndDelete`: de dos usos simultáneos del mismo link, gana uno;
+   - guarda el hash nuevo y sube `sessionVersion`, lo que **cierra todas las sesiones**;
+   - borra los demás pedidos y limpia el bloqueo de login de esa cuenta.
+6. **Sin clave de Brevo.** En desarrollo el email se imprime en la consola del servidor, con el link para probar. En producción no se envía nada y queda el error en el log.
+
+### Por qué
+
+- **Recuperación sin el administrador:** quien olvida la contraseña la recupera solo, probando que es dueño del email. El administrador no tiene que conocer ni generar contraseñas ajenas.
+- **Guardar el hash y no el token:** si alguien lee la base (un backup, un acceso indebido), no puede usar los links pendientes.
+- **`APP_URL` y no el `Host` del pedido:** con el `Host` alguien podría pedir el link de otra persona con `Host: sitio-falso.com`. La víctima recibiría un email legítimo con un link al sitio falso, que le robaría el token. Hay un test con `Host` y `X-Forwarded-Host` falsos.
+- **Misma respuesta exista o no la cuenta, y envío en segundo plano:** evita usar el formulario para averiguar qué emails tienen cuenta.
+- **Validar antes de consumir el token:** una contraseña débil no gasta el link; la persona la corrige y vuelve a intentar.
+- **Cerrar todas las sesiones:** si alguien estaba usando la cuenta, recuperar la contraseña lo deja afuera.
+- **Brevo con `fetch`:** permite enviar desde un email verificado sin dominio propio, con 300 envíos por día gratis. Es una llamada HTTP, así que no suma una dependencia.
+
+### Límites conocidos
+
+- El límite de pedidos vive en la memoria del proceso, igual que el del login.
+- Si Brevo falla, la persona no se entera (ve el mismo mensaje de siempre). El error queda en el log del servidor.
+- Los emails pueden llegar a spam mientras el remitente no tenga un dominio propio verificado.
+
+### Tests
+
+En `test/passwordReset.test.js` (10 tests). Ninguno llama a Brevo: se reemplaza `mailer.send`.
+
+- Pedido:
+  - misma respuesta con y sin cuenta, y email solo a la que existe;
+  - en la base queda el hash;
+  - el link usa `APP_URL` aunque el `Host` sea falso.
+- Validación del email y límite de pedidos.
+- Restablecer:
+  - con el link se cambia la contraseña y se cierran las sesiones;
+  - el link no sirve dos veces;
+  - pedir otro link anula el anterior;
+  - un link vencido no sirve;
+  - una contraseña débil no gasta el link.
+- Ataques: tokens inventados u operadores, y dos usos simultáneos (gana uno).
+- El email escapa el nombre.
+- El login ofrece recuperar la contraseña.
+
+---
+
 ## Mi perfil y cierre de las otras sesiones (25/11/2026)
 
 ### Qué se agregó
