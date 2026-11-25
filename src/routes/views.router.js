@@ -10,6 +10,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/index.js';
 import { LOAN_DAYS, loanStatus } from '../utils/loans.js';
 import { passwordChecks } from '../public/js/passwordPolicy.js';
+import { findValidReset } from '../utils/passwordReset.js';
 import { HOLD_DAYS, MAX_RESERVATIONS, bookState, isHeldFor, releaseExpiredHolds, reservationsOf } from '../utils/reservations.js';
 
 const router = Router();
@@ -231,5 +232,24 @@ const authPage = (view, title) => (req, res) => {
 
 router.get('/login', authPage('login', 'Ingresar'));
 router.get('/register', authPage('register', 'Crear cuenta'));
+
+// Olvidé mi contraseña: pedir el link por email.
+router.get('/recuperar', (req, res) => res.render('forgot', { title: 'Recuperar contraseña' }));
+
+// Link del email: si el token sigue vigente, formulario para la contraseña nueva.
+// no-referrer: el token está en la URL y no tiene que viajar a ningún otro sitio.
+router.get('/restablecer', asyncHandler(async (req, res) => {
+  res.set('Referrer-Policy', 'no-referrer');
+  const token = typeof req.query.token === 'string' ? req.query.token : '';
+  const pending = await findValidReset(token);
+  const owner = pending ? await usersService.getUserById(pending.user) : null;
+  res.render('reset', {
+    title: 'Crear contraseña nueva',
+    valid: Boolean(owner),
+    token,
+    person: owner ? { email: owner.email, first_name: owner.first_name, last_name: owner.last_name } : null,
+    passwordRules: passwordChecks('').map(({ id, label }) => ({ id, label })),
+  });
+}));
 
 export default router;

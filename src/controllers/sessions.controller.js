@@ -2,12 +2,17 @@ import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import { COOKIE_NAME, cookieOptions, signToken } from "../utils/auth.js";
 import { createLoginLimiter, loginLimiter, registerLimiter, waitMessage } from "../utils/loginLimiter.js";
+import { passwordProblem } from "../public/js/passwordPolicy.js";
+import { RESET_MINUTES, clearResets, consumeReset, findValidReset, sendResetEmail } from "../utils/passwordReset.js";
 
 // Cambiar la contraseña pide la actual: con una sesión abierta ajena alguien podría probar
 // contraseñas, así que tiene su propio límite de intentos (5 por cuenta cada 15 minutos).
 export const passwordChangeLimiter = createLoginLimiter();
+// "Olvidé mi contraseña": cada pedido cuenta, haya cuenta o no. 3 por email y conexión y
+// 10 por conexión cada hora: nadie puede llenar de emails una casilla ni probar direcciones.
+export const forgotLimiter = createLoginLimiter({ windowMs: 60 * 60 * 1000, maxPerAccount: 3, maxPerIp: 10 });
 const NAME_MAX = 50;
-import { passwordProblem } from "../public/js/passwordPolicy.js";
+const FORGOT_MESSAGE = `Si el email tiene una cuenta, te enviamos un link para crear una contraseña nueva. Vence en ${RESET_MINUTES} minutos.`;
 
 const register = async (req, res) => {
     const wait = registerLimiter.retryAfter(req);
@@ -107,8 +112,52 @@ const changePassword = async (req, res) => {
     res.send({ status: "success", message: "Contraseña cambiada. Cerramos las demás sesiones." });
 }
 
+// Pide el link para crear una contraseña nueva. La respuesta es siempre la misma, exista o
+// no la cuenta, y el email se envía después de responder: ni el mensaje ni la demora
+// revelan qué emails están registrados.
+const forgotPassword = async (req, res) => {
+    const wait = forgotLimiter.retryAfter(req);
+    if (wait) return res.status(429).set("Retry-After", String(wait)).send({ status: "error", error: waitMessage(wait, "Demasiados pedidos") });
+    const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase().trim() : "";
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).send({ status: "error", error: "Escribe un email válido" });
+    }
+    forgotLimiter.fail(req);
+
+    const user = await usersService.getUserByEmail(email);
+    res.send({ status: "success", message: FORGOT_MESSAGE });
+    if (user) {
+        sendResetEmail(user).catch((error) => console.error(`No se pudo enviar el email de recuperación: ${error.message}`));
+    }
+}
+
+// Crea la contraseña nueva con el token del email. Consume el token (sirve una sola vez),
+// aplica la regla de contraseñas y cierra todas las sesiones abiertas de la cuenta.
+const resetPassword = async (req, res) => {
+    const token = req.body?.token;
+    const newPassword = typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
+    const pending = await findValidReset(token);
+    if (!pending) return res.status(400).send({ status: "error", error: "El link venció o ya se usó. Pide uno nuevo." });
+
+    const user = await usersService.getUserById(pending.user);
+    if (!user) return res.status(400).send({ status: "error", error: "El link venció o ya se usó. Pide uno nuevo." });
+    const problem = passwordProblem(newPassword, { email: user.email, first_name: user.first_name, last_name: user.last_name });
+    if (problem) return res.status(400).send({ status: "error", error: problem });
+
+    // Recién con todo validado se consume el token; si dos pedidos llegan juntos, gana uno.
+    if (!(await consumeReset(token))) return res.status(400).send({ status: "error", error: "El link venció o ya se usó. Pide uno nuevo." });
+    await usersService.changePassword(user._id, await createHash(newPassword));
+    await clearResets(user._id);
+    // Quien recuperó su cuenta puede volver a intentar el login sin esperar el bloqueo.
+    loginLimiter.succeed({ ip: req.ip, body: { email: user.email } });
+    res.clearCookie(COOKIE_NAME, { ...cookieOptions(), maxAge: undefined });
+    res.send({ status: "success", message: "Listo: ya puedes ingresar con tu contraseña nueva." });
+}
+
 export default {
     changePassword,
+    forgotPassword,
+    resetPassword,
     current,
     login,
     logout,
