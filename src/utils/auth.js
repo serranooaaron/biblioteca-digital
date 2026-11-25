@@ -20,6 +20,8 @@ export const signToken = (user) =>
       name: `${user.first_name} ${user.last_name}`,
       email: user.email,
       role: user.role,
+      // Versión de sesión del usuario al firmar: si después cambia, este token deja de valer.
+      sv: user.sessionVersion ?? 0,
     },
     getJwtSecret(),
     { expiresIn: TOKEN_TTL_SECONDS }

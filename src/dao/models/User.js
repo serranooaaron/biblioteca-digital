@@ -29,6 +29,13 @@ const schema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default:'user'
     },
+    // Versión de las sesiones: cada token guarda la que había al iniciar sesión.
+    // Cambiar la contraseña la sube y los tokens anteriores dejan de valer.
+    sessionVersion: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
     books:{
         type:[
             {

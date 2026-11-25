@@ -12,5 +12,8 @@ export default class UserRepository extends GenericRepository{
     getUserById = (id) =>{
         return this.getBy({_id:id})
     }
+    changePassword = (id, passwordHash) =>{
+        return this.dao.changePassword(id, passwordHash);
+    }
     
 }
