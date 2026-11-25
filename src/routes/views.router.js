@@ -173,6 +173,15 @@ router.get('/mis-prestamos', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+// Mi perfil: nombre y contraseña. Los datos salen de la sesión, que ya los trae de la base.
+router.get('/perfil', requireAuth, (req, res) => {
+  res.render('profile', {
+    title: 'Mi perfil',
+    profile: req.user,
+    passwordRules: passwordChecks('').map(({ id, label }) => ({ id, label })),
+  });
+});
+
 const ADMIN_TABS = ['libros', 'prestamos', 'usuarios'];
 
 router.get('/admin', requireAdmin, asyncHandler(async (req, res) => {

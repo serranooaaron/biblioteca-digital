@@ -1,0 +1,52 @@
+<main class="container profile">
+  <header class="page-head">
+    <p class="eyebrow">Tu cuenta</p>
+    <h1>Mi perfil</h1>
+    <p class="profile__email">{{profile.email}}</p>
+  </header>
+
+  <div class="profile__grid">
+    <section class="auth__card profile__card" aria-labelledby="profile-data-title">
+      <h2 id="profile-data-title">Tus datos</h2>
+      <form class="auth__form" data-profile-form novalidate>
+        <div class="auth__row">
+          <div class="field">
+            <label for="first_name">Nombre</label>
+            <input id="first_name" name="first_name" autocomplete="given-name" maxlength="50" required value="{{profile.first_name}}" />
+          </div>
+          <div class="field">
+            <label for="last_name">Apellido</label>
+            <input id="last_name" name="last_name" autocomplete="family-name" maxlength="50" required value="{{profile.last_name}}" />
+          </div>
+        </div>
+        <p class="field__hint">El email identifica tu cuenta y no se puede cambiar.</p>
+        <p class="form-error" data-form-error role="alert"></p>
+        <button class="btn btn--primary" type="submit">Guardar datos</button>
+      </form>
+    </section>
+
+    <section class="auth__card profile__card" aria-labelledby="profile-password-title">
+      <h2 id="profile-password-title">Cambiar contraseña</h2>
+      <p class="field__hint">Al cambiarla se cierran tus sesiones en otros dispositivos.</p>
+      <form class="auth__form" data-password-form data-email="{{profile.email}}" data-first-name="{{profile.first_name}}" data-last-name="{{profile.last_name}}" novalidate>
+        <div class="field">
+          <label for="currentPassword">Contraseña actual</label>
+          <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required />
+        </div>
+        <div class="field">
+          <label for="newPassword">Contraseña nueva</label>
+          <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="10" required aria-describedby="password-rules" data-password />
+          <ul class="password-rules" id="password-rules" data-password-rules aria-label="Requisitos de la contraseña">
+            {{#each passwordRules}}
+              <li data-rule="{{id}}"><span class="password-rules__icon" aria-hidden="true"></span><span>{{label}}</span><span class="sr-only" data-rule-state>: falta</span></li>
+            {{/each}}
+          </ul>
+        </div>
+        <p class="form-error" data-form-error role="alert"></p>
+        <button class="btn btn--primary" type="submit">Cambiar contraseña</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script src="/js/profile.js" type="module"></script>
